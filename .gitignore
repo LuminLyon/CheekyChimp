@@ -1,0 +1,23 @@
+# 忽略node_modules
+node_modules/
+
+# 忽略构建输出
+dist/
+
+# 忽略MacOS系统文件
+.DS_Store
+
+# 忽略IDE配置
+.idea/
+.vscode/
+
+# 忽略日志文件
+*.log
+
+# 忽略环境变量
+.env
+.env.local
+
+# 忽略临时文件
+.tmp/
+temp/ 

@@ -1,0 +1,79 @@
+/* Tampermonkey Plugin Styles */
+
+.tampermonkey-icon {
+    color: var(--icon-color);
+}
+
+.tampermonkey-settings-header {
+    margin-bottom: 1em;
+}
+
+.tampermonkey-script-list {
+    margin-bottom: 1em;
+}
+
+.tampermonkey-script-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5em;
+    border-radius: 5px;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: 0.5em;
+}
+
+.tampermonkey-script-enabled {
+    margin-right: 1em;
+}
+
+.tampermonkey-script-name {
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.tampermonkey-script-actions {
+    display: flex;
+    gap: 0.5em;
+}
+
+.tampermonkey-editor {
+    height: 400px;
+    font-family: var(--font-monospace);
+}
+
+.tampermonkey-dialog {
+    width: 80%;
+    max-width: 800px;
+}
+
+.tampermonkey-status-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tampermonkey-tooltip {
+    position: relative;
+}
+
+.tampermonkey-tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.tampermonkey-tooltip:hover .tampermonkey-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+} 
