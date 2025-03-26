@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, Notice, Modal, TextComponent, ButtonComponent } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, Modal, TextComponent, ButtonComponent, Menu } from 'obsidian';
 import TampermonkeyPlugin from '../main';
 import { UserScript } from '../models/script';
 
@@ -82,8 +82,8 @@ export class TampermonkeySettingTab extends PluginSettingTab {
             .addButton(button => button
                 .setButtonText('导入')
                 .setCta()
-                .onClick(() => {
-                    this.importScript();
+                .onClick((event) => {
+                    this.importScript(event);
                 }));
         
         // Create script button
@@ -226,22 +226,165 @@ export class TampermonkeySettingTab extends PluginSettingTab {
     /**
      * Import a script from file
      */
-    private async importScript(): Promise<void> {
-        // TODO: Implement file import dialog
-        // For now, just show a modal to paste script content
+    private async importScript(event: MouseEvent): Promise<void> {
+        // 创建导入选项菜单
+        const menu = new Menu();
         
-        const modal = new ScriptImportModal(this.app, async (content) => {
+        // 添加从文件导入选项
+        menu.addItem((item) => {
+            item.setTitle("从文件导入")
+                .setIcon("folder")
+                .onClick(() => {
+                    this.importFromFile();
+                });
+        });
+        
+        // 添加从URL导入选项
+        menu.addItem((item) => {
+            item.setTitle("从URL导入")
+                .setIcon("link")
+                .onClick(() => {
+                    this.importFromUrl();
+                });
+        });
+        
+        // 添加从粘贴板导入选项
+        menu.addItem((item) => {
+            item.setTitle("从粘贴板导入")
+                .setIcon("clipboard")
+                .onClick(() => {
+                    this.importFromClipboard();
+                });
+        });
+        
+        // 显示菜单
+        menu.showAtMouseEvent(event);
+    }
+
+    /**
+     * 从文件导入脚本
+     */
+    private async importFromFile(): Promise<void> {
+        // 创建隐藏的文件输入元素
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.js,.user.js';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+        
+        // 监听文件选择事件
+        fileInput.addEventListener('change', async (event) => {
+            const target = event.target as HTMLInputElement;
+            const files = target.files;
+            
+            if (!files || files.length === 0) {
+                document.body.removeChild(fileInput);
+                return;
+            }
+            
+            const file = files[0];
             try {
+                // 读取文件内容
+                const content = await this.readFileAsText(file);
+                
+                // 检查文件是否包含UserScript头部
+                if (!content.includes('// ==UserScript==') || !content.includes('// ==/UserScript==')) {
+                    new Notice('导入失败：无效的用户脚本格式');
+                    document.body.removeChild(fileInput);
+                    return;
+                }
+                
+                // 添加脚本
                 const script = this.plugin.scriptManager.addScript(content);
                 await this.plugin.saveSettings();
                 new Notice(`脚本 "${script.name}" 已导入`);
-                this.display(); // Refresh settings page
+                this.display(); // 刷新设置页面
+            } catch (error) {
+                new Notice(`导入脚本失败: ${error.message}`);
+            } finally {
+                document.body.removeChild(fileInput);
+            }
+        });
+        
+        // 触发文件选择对话框
+        fileInput.click();
+    }
+
+    /**
+     * 从URL导入脚本
+     */
+    private async importFromUrl(): Promise<void> {
+        const modal = new UrlImportModal(this.app, async (url) => {
+            try {
+                new Notice(`正在从 ${url} 下载脚本...`);
+                
+                // 获取脚本内容
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`请求失败: ${response.status} ${response.statusText}`);
+                }
+                
+                const content = await response.text();
+                
+                // 检查是否是有效的用户脚本
+                if (!content.includes('// ==UserScript==') || !content.includes('// ==/UserScript==')) {
+                    throw new Error('不是有效的用户脚本格式');
+                }
+                
+                // 添加脚本
+                const script = this.plugin.scriptManager.addScript(content);
+                await this.plugin.saveSettings();
+                new Notice(`脚本 "${script.name}" 已导入`);
+                this.display(); // 刷新设置页面
             } catch (error) {
                 new Notice(`导入脚本失败: ${error.message}`);
             }
         });
         
         modal.open();
+    }
+
+    /**
+     * 从剪贴板导入脚本
+     */
+    private async importFromClipboard(): Promise<void> {
+        const modal = new ScriptImportModal(this.app, async (content) => {
+            try {
+                // 检查是否是有效的用户脚本
+                if (!content.includes('// ==UserScript==') || !content.includes('// ==/UserScript==')) {
+                    throw new Error('不是有效的用户脚本格式');
+                }
+                
+                const script = this.plugin.scriptManager.addScript(content);
+                await this.plugin.saveSettings();
+                new Notice(`脚本 "${script.name}" 已导入`);
+                this.display(); // 刷新设置页面
+            } catch (error) {
+                new Notice(`导入脚本失败: ${error.message}`);
+            }
+        });
+        
+        modal.open();
+    }
+
+    /**
+     * 读取文件内容为文本
+     */
+    private readFileAsText(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (event.target) {
+                    resolve(event.target.result as string);
+                } else {
+                    reject(new Error('读取文件失败'));
+                }
+            };
+            reader.onerror = () => {
+                reject(new Error('读取文件失败'));
+            };
+            reader.readAsText(file);
+        });
     }
 
     /**
@@ -410,6 +553,10 @@ class ScriptEditorModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass('tampermonkey-dialog');
+        
+        // 设置对话框宽度
+        contentEl.style.width = '500px';
+        contentEl.style.maxWidth = '80vw';
 
         contentEl.createEl('h2', { text: '编辑用户脚本' });
         
@@ -418,7 +565,15 @@ class ScriptEditorModal extends Modal {
             cls: 'tampermonkey-editor'
         });
         
+        // 设置文本区域样式
         textArea.value = this.content;
+        textArea.style.width = '100%';
+        textArea.style.height = '500px';
+        textArea.style.minHeight = '400px';
+        textArea.style.fontSize = '14px';
+        textArea.style.fontFamily = 'monospace';
+        textArea.style.padding = '10px';
+        textArea.style.boxSizing = 'border-box';
         
         textArea.addEventListener('input', (e) => {
             this.content = (e.target as HTMLTextAreaElement).value;
@@ -502,6 +657,90 @@ class ConfirmModal extends Modal {
         
         confirmButton.addEventListener('click', () => {
             this.onConfirm(true);
+            this.close();
+        });
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+/**
+ * Modal for importing scripts from URL
+ */
+class UrlImportModal extends Modal {
+    private url: string = '';
+    private onSubmit: (url: string) => void;
+
+    constructor(app: App, onSubmit: (url: string) => void) {
+        super(app);
+        this.onSubmit = onSubmit;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass('tampermonkey-dialog');
+
+        contentEl.createEl('h2', { text: '从URL导入用户脚本' });
+        
+        // Instructions
+        contentEl.createEl('p', { 
+            text: '输入用户脚本的URL:' 
+        });
+        
+        // Input for URL
+        const urlInput = new TextComponent(contentEl);
+        urlInput.setPlaceholder('https://example.com/userscript.user.js');
+        urlInput.inputEl.addClass('tampermonkey-url-input');
+        urlInput.inputEl.style.width = '100%';
+        
+        urlInput.onChange((value) => {
+            this.url = value;
+        });
+        
+        // Buttons
+        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+        
+        // Cancel button
+        const cancelButton = buttonContainer.createEl('button', {
+            text: '取消',
+            cls: 'mod-warning'
+        });
+        
+        cancelButton.addEventListener('click', () => {
+            this.close();
+        });
+        
+        // Import button
+        const importButton = buttonContainer.createEl('button', {
+            text: '导入',
+            cls: 'mod-cta'
+        });
+        
+        importButton.addEventListener('click', () => {
+            if (!this.url) {
+                new Notice('请输入有效的URL');
+                return;
+            }
+            
+            // 尝试规范化URL
+            try {
+                // 如果URL没有协议，添加https://
+                if (!this.url.match(/^https?:\/\//)) {
+                    this.url = 'https://' + this.url;
+                }
+                
+                // 检查URL是否有效
+                new URL(this.url);
+            } catch (e) {
+                new Notice('请输入有效的URL');
+                return;
+            }
+            
+            this.onSubmit(this.url);
             this.close();
         });
     }

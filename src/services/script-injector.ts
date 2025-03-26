@@ -41,15 +41,15 @@ export class ScriptInjector {
                 }
                 
                 // 注入document-start脚本
-                for (const script of documentStartScripts) {
-                    await this.injectScript(webview, url, script);
-                }
-                
+        for (const script of documentStartScripts) {
+            await this.injectScript(webview, url, script);
+        }
+        
                 // 处理document-end脚本
-                this.injectContentLoadedListener(webview, url, documentEndScripts);
-                
+        this.injectContentLoadedListener(webview, url, documentEndScripts);
+        
                 // 处理document-idle脚本
-                this.injectLoadListener(webview, url, documentIdleScripts);
+        this.injectLoadListener(webview, url, documentIdleScripts);
             } catch (error) {
                 console.error(`Tampermonkey: 注入脚本过程出错:`, error);
             }
