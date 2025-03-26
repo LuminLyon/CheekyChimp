@@ -20,7 +20,7 @@ export default class TampermonkeyPlugin extends Plugin {
         // Initialize services
         this.scriptStorage = new ObsidianStorage(this);
         this.scriptManager = new ScriptManager();
-        this.scriptInjector = new ScriptInjector(this.scriptStorage);
+        this.scriptInjector = new ScriptInjector(this.scriptStorage, this.scriptManager);
 
         // Load settings
         await this.loadSettings();

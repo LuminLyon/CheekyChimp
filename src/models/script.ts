@@ -89,7 +89,18 @@ export interface GM_API {
     GM_openInTab(url: string, options?: any): any;
     GM_setClipboard(data: string, info?: any): void;
     GM_notification(details: any, ondone?: Function): void;
+    GM_addElement?(tagName: string, attributes: any): HTMLElement;
     unsafeWindow: Window;
+    GM?: {
+        getValue(name: string, defaultValue?: any): Promise<any>;
+        setValue(name: string, value: any): Promise<void>;
+        deleteValue(name: string): Promise<void>;
+        listValues(): Promise<string[]>;
+        xmlHttpRequest(details: any): any;
+        addStyle(css: string): Promise<HTMLStyleElement>;
+        registerMenuCommand(name: string, fn: Function, accessKey?: string): Promise<number>;
+        addElement(tagName: string, attributes: any): Promise<HTMLElement>;
+    };
 }
 
 /**
