@@ -26,7 +26,7 @@ export class GmApiService {
                 requires: script.requires
             },
             version: '0.1.0', // 插件版本
-            scriptHandler: 'Obsidian Tampermonkey',
+            scriptHandler: 'Obsidian CheekyChimp',
             scriptMetaStr: this.getScriptMetaStr(script)
         };
         
@@ -60,21 +60,21 @@ export class GmApiService {
             // 存储函数
             GM_getValue: (name: string, defaultValue?: any): any => {
                 // 实现同步版本，带默认值
-                return localStorage.getItem(`tampermonkey:${script.id}:${name}`) || defaultValue;
+                return localStorage.getItem(`cheekychimp:${script.id}:${name}`) || defaultValue;
             },
             GM_setValue: (name: string, value: any): void => {
-                localStorage.setItem(`tampermonkey:${script.id}:${name}`, value);
+                localStorage.setItem(`cheekychimp:${script.id}:${name}`, value);
                 scriptStorage.setValue(name, value);
             },
             GM_deleteValue: (name: string): void => {
-                localStorage.removeItem(`tampermonkey:${script.id}:${name}`);
+                localStorage.removeItem(`cheekychimp:${script.id}:${name}`);
                 scriptStorage.deleteValue(name);
             },
             GM_listValues: (): string[] => {
                 // 这是一个同步函数，但我们的存储是异步的
                 // 暂时从localStorage返回缓存的值
                 const keys = [];
-                const prefix = `tampermonkey:${script.id}:`;
+                const prefix = `cheekychimp:${script.id}:`;
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     if (key && key.startsWith(prefix)) {
@@ -183,4 +183,4 @@ export class GmApiService {
         
         return metaLines.join('\n');
     }
-} 
+}

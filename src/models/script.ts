@@ -1,5 +1,5 @@
 /**
- * UserScript class representing a script managed by Tampermonkey
+ * UserScript class representing a script managed by CheekyChimp
  */
 export class UserScript {
     /** Unique identifier for the script */
@@ -154,4 +154,4 @@ export interface ScriptConfig {
     debug: boolean;
     /** 调试日志级别 */
     logLevel: 'debug' | 'info' | 'warn' | 'error';
-} 
+}

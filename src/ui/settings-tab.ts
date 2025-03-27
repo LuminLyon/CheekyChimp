@@ -394,7 +394,7 @@ export class TampermonkeySettingTab extends PluginSettingTab {
         // Create a template script
         const template = `// ==UserScript==
 // @name        新脚本
-// @namespace   obsidian-tampermonkey
+// @namespace   obsidian-cheekychimp
 // @version     0.1
 // @description 在此处填写脚本描述
 // @author      你的名字
@@ -406,7 +406,7 @@ export class TampermonkeySettingTab extends PluginSettingTab {
     'use strict';
     
     // 你的代码在这里...
-    console.log('Hello from Tampermonkey script!');
+    console.log('Hello from Javascript!');
 })();`;
         
         const modal = new ScriptEditorModal(this.app, template, async (content) => {
@@ -482,7 +482,7 @@ class ScriptImportModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.addClass('tampermonkey-dialog');
+        contentEl.addClass('cheekychimp-dialog');
 
         contentEl.createEl('h2', { text: '导入用户脚本' });
         
@@ -493,7 +493,7 @@ class ScriptImportModal extends Modal {
         
         // Text area for script content
         const textArea = contentEl.createEl('textarea', {
-            cls: 'tampermonkey-editor'
+            cls: 'cheekychimp-editor'
         });
         
         textArea.addEventListener('input', (e) => {
@@ -552,7 +552,7 @@ class ScriptEditorModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.addClass('tampermonkey-dialog');
+        contentEl.addClass('cheekychimp-dialog');
         
         // 设置对话框宽度
         contentEl.style.width = '500px';
@@ -562,7 +562,7 @@ class ScriptEditorModal extends Modal {
         
         // Text area for script content
         const textArea = contentEl.createEl('textarea', {
-            cls: 'tampermonkey-editor'
+            cls: 'cheekychimp-editor'
         });
         
         // 设置文本区域样式
@@ -682,7 +682,7 @@ class UrlImportModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.addClass('tampermonkey-dialog');
+        contentEl.addClass('cheekychimp-dialog');
 
         contentEl.createEl('h2', { text: '从URL导入用户脚本' });
         
@@ -749,4 +749,4 @@ class UrlImportModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
     }
-} 
+}

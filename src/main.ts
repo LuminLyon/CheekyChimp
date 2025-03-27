@@ -82,10 +82,10 @@ export default class TampermonkeyPlugin extends Plugin {
     }
 
     onunload() {
-        console.log('Unloading Tampermonkey plugin');
+        console.log('Unloading CheekyChimp plugin');
         // 移除自定义事件监听器
-        document.removeEventListener('tampermonkey-edit-script', this.editScriptHandler);
-        document.removeEventListener('tampermonkey-create-script', this.createScriptHandler);
+        document.removeEventListener('cheekychimp-edit-script', this.editScriptHandler);
+        document.removeEventListener('cheekychimp-create-script', this.createScriptHandler);
     }
 
     async loadSettings() {
@@ -419,4 +419,4 @@ export default class TampermonkeyPlugin extends Plugin {
         `;
         document.head.appendChild(style);
     }
-} 
+}

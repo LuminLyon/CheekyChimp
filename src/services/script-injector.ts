@@ -191,7 +191,7 @@ export class ScriptInjector {
                 requires: script.requires
             },
             version: '0.1.0', // Plugin version
-            scriptHandler: 'Obsidian Tampermonkey',
+            scriptHandler: 'Obsidian CheekyChimp',
             scriptMetaStr: this.getScriptMetaStr(script)
         };
         
@@ -324,26 +324,26 @@ export class ScriptInjector {
         
         // 创建异步版本的存储函数，用于支持新版GM API（返回Promise的版本）
         const gmGetValue = async (name: string, defaultValue?: any): Promise<any> => {
-            const key = `tampermonkey:${script.id}:${name}`;
+            const key = `cheekychimp:${script.id}:${name}`;
             const value = localStorage.getItem(key);
             return value !== null ? value : defaultValue;
         };
         
         const gmSetValue = async (name: string, value: any): Promise<void> => {
-            const key = `tampermonkey:${script.id}:${name}`;
+            const key = `cheekychimp:${script.id}:${name}`;
             localStorage.setItem(key, value);
             await scriptStorage.setValue(name, value);
         };
         
         const gmDeleteValue = async (name: string): Promise<void> => {
-            const key = `tampermonkey:${script.id}:${name}`;
+            const key = `cheekychimp:${script.id}:${name}`;
             localStorage.removeItem(key);
             await scriptStorage.deleteValue(name);
         };
         
         const gmListValues = async (): Promise<string[]> => {
             const keys = [];
-            const prefix = `tampermonkey:${script.id}:`;
+            const prefix = `cheekychimp:${script.id}:`;
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith(prefix)) {
@@ -360,21 +360,21 @@ export class ScriptInjector {
             // Storage functions - 同步版本
             GM_getValue: (name: string, defaultValue?: any): any => {
                 // Implement synchronous version with default
-                return localStorage.getItem(`tampermonkey:${script.id}:${name}`) || defaultValue;
+                return localStorage.getItem(`cheekychimp:${script.id}:${name}`) || defaultValue;
             },
             GM_setValue: (name: string, value: any): void => {
-                localStorage.setItem(`tampermonkey:${script.id}:${name}`, value);
+                localStorage.setItem(`cheekychimp:${script.id}:${name}`, value);
                 scriptStorage.setValue(name, value);
             },
             GM_deleteValue: (name: string): void => {
-                localStorage.removeItem(`tampermonkey:${script.id}:${name}`);
+                localStorage.removeItem(`cheekychimp:${script.id}:${name}`);
                 scriptStorage.deleteValue(name);
             },
             GM_listValues: (): string[] => {
                 // This is a synchronous function, but our storage is async
                 // Return cached values from localStorage for now
                 const keys = [];
-                const prefix = `tampermonkey:${script.id}:`;
+                const prefix = `cheekychimp:${script.id}:`;
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     if (key && key.startsWith(prefix)) {
@@ -398,7 +398,7 @@ export class ScriptInjector {
                 addStyle: async (css: string): Promise<HTMLStyleElement> => {
                     const style = document.createElement('style');
                     style.textContent = css;
-                    style.setAttribute('data-tampermonkey-style', script.id);
+                    style.setAttribute('data-cheekychimp-style', script.id);
                     document.head.appendChild(style);
                     return style;
                 },
@@ -436,7 +436,7 @@ export class ScriptInjector {
                     }
                     
                     // 尝试从缓存获取资源
-                    const cacheKey = `tampermonkey_resource:${script.id}:${name}`;
+                    const cacheKey = `cheekychimp_resource:${script.id}:${name}`;
                     const cachedResource = localStorage.getItem(cacheKey);
                     if (cachedResource) {
                         console.log(`Tampermonkey: 使用缓存的资源 ${name}`);
@@ -502,7 +502,7 @@ export class ScriptInjector {
                 try {
                 const style = document.createElement('style');
                 style.textContent = css;
-                    style.setAttribute('data-tampermonkey-style', script.id);
+                    style.setAttribute('data-cheekychimp-style', script.id);
                 document.head.appendChild(style);
                 } catch (e) {
                     console.error('Tampermonkey: 添加样式失败:', e);
@@ -541,10 +541,10 @@ export class ScriptInjector {
                     }
                     
                     // 移除相关事件监听器
-                    document.removeEventListener(`tampermonkey-run-command-${menuCmdId}`, () => {});
+                    document.removeEventListener(`cheekychimp-run-command-${menuCmdId}`, () => {});
                     
                     // 创建一个通知事件，告诉Tampermonkey UI命令已被移除
-                    const event = new CustomEvent('tampermonkey-command-unregistered', {
+                    const event = new CustomEvent('cheekychimp-command-unregistered', {
                         detail: {
                             scriptId: script.id,
                             commandId: menuCmdId
@@ -604,20 +604,20 @@ export class ScriptInjector {
                     
                     // 定义GM API函数
                     const GM_getValue = function(name, defaultValue) {
-                        return localStorage.getItem('tampermonkey:${script.id}:' + name) || defaultValue;
+                        return localStorage.getItem('cheekychimp:${script.id}:' + name) || defaultValue;
                     };
                     
                     const GM_setValue = function(name, value) {
-                        localStorage.setItem('tampermonkey:${script.id}:' + name, value);
+                        localStorage.setItem('cheekychimp:${script.id}:' + name, value);
                     };
                     
                     const GM_deleteValue = function(name) {
-                        localStorage.removeItem('tampermonkey:${script.id}:' + name);
+                        localStorage.removeItem('cheekychimp:${script.id}:' + name);
                     };
                     
                     const GM_listValues = function() {
                         const keys = [];
-                        const prefix = 'tampermonkey:${script.id}:';
+                        const prefix = 'cheekychimp:${script.id}:';
                         for (let i = 0; i < localStorage.length; i++) {
                             const key = localStorage.key(i);
                             if (key && key.startsWith(prefix)) {
@@ -641,7 +641,7 @@ export class ScriptInjector {
                     // 简化版的GM_getResourceText函数
                     const GM_getResourceText = function(name) {
                         // 从缓存中获取资源
-                        const cacheKey = 'tampermonkey_resource:${script.id}:' + name;
+                        const cacheKey = 'cheekychimp_resource:${script.id}:' + name;
                         const cachedResource = localStorage.getItem(cacheKey);
                         
                         // 如果是夜间模式助手脚本请求swalStyle，且是第一次加载
@@ -672,7 +672,7 @@ export class ScriptInjector {
                         console.log('Tampermonkey: 脚本注册菜单命令:', name);
                         // 存储命令到本地存储
                         const commandId = Date.now() + Math.floor(Math.random() * 1000);
-                        const commandsKey = 'tampermonkey_commands:${script.id}';
+                        const commandsKey = 'cheekychimp_commands:${script.id}';
                         let commands = [];
                         try {
                             const savedCommands = localStorage.getItem(commandsKey);
@@ -693,17 +693,17 @@ export class ScriptInjector {
                         setTimeout(function() {
                             try {
                                 // 检查是否已经有菜单容器
-                                let menuContainer = document.getElementById('tampermonkey-menu-container');
+                                let menuContainer = document.getElementById('cheekychimp-menu-container');
                                 if (!menuContainer) {
                                     // 创建菜单容器
                                     menuContainer = document.createElement('div');
-                                    menuContainer.id = 'tampermonkey-menu-container';
+                                    menuContainer.id = 'cheekychimp-menu-container';
                                     menuContainer.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 9999; display: none; background: white; border: 1px solid #ccc; border-radius: 5px; padding: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);';
                                     document.body.appendChild(menuContainer);
                                     
                                     // 创建菜单图标
                                     const menuIcon = document.createElement('div');
-                                    menuIcon.id = 'tampermonkey-menu-icon';
+                                    menuIcon.id = 'cheekychimp-menu-icon';
                                     menuIcon.innerHTML = '<svg width="24" height="24" viewBox="0 0 512 512"><path fill="currentColor" d="M108.12 0L0 108.12v295.76L108.12 512h295.76L512 403.88V108.12L403.88 0zm71.84 107.25c9.02 0 16.56 7.54 16.56 16.56v49h58.07c9.02 0 16.56 7.54 16.56 16.56v87.19c0 9.02-7.54 16.56-16.56 16.56h-58.07v52c0 9.02-7.54 16.56-16.56 16.56h-127c-9.02 0-16.56-7.54-16.56-16.56v-52h-58.07c-9.02 0-16.56-7.54-16.56-16.56v-87.19c0-9.02 7.54-16.56 16.56-16.56h58.07v-49c0-9.02 7.54-16.56 16.56-16.56z"/></svg>';
                                     menuIcon.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 10000; cursor: pointer; width: 24px; height: 24px; background: white; border-radius: 50%; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);';
                                     document.body.appendChild(menuIcon);
@@ -939,7 +939,7 @@ export class ScriptInjector {
                                         // 方法3: 尝试执行特殊命令
                                         if (typeof GM !== 'undefined' && typeof GM.registerMenuCommand === 'function') {
                                             // 尝试查找和执行菜单命令
-                                            const menuCommands = localStorage.getItem('tampermonkey_commands:' + script.id);
+                                            const menuCommands = localStorage.getItem('cheekychimp_commands:' + script.id);
                                             if (menuCommands) {
                                                 try {
                                                     const commands = JSON.parse(menuCommands);
@@ -948,7 +948,7 @@ export class ScriptInjector {
                                                         if (cmd.name.includes('翻译') || cmd.name.includes('Translate')) {
                                                             // 触发命令执行
                                                             const cmdId = cmd.id;
-                                                            const cmdEvent = new CustomEvent('tampermonkey-run-command-' + cmdId);
+                                                            const cmdEvent = new CustomEvent('cheekychimp-run-command-' + cmdId);
                                                             document.dispatchEvent(cmdEvent);
                                                             console.log('Tampermonkey: 执行沉浸式翻译命令:', cmd.name);
                                                             break;
@@ -1153,11 +1153,11 @@ export class ScriptInjector {
         const listenerScript = `
             if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
-                    window.dispatchEvent(new CustomEvent('obsidian-tampermonkey-domcontentloaded'));
+                    window.dispatchEvent(new CustomEvent('obsidian-cheekychimp-domcontentloaded'));
                 });
             } else {
                 // 文档已加载，立即触发事件
-                window.dispatchEvent(new CustomEvent('obsidian-tampermonkey-domcontentloaded'));
+                window.dispatchEvent(new CustomEvent('obsidian-cheekychimp-domcontentloaded'));
             }
         `;
         
@@ -1170,11 +1170,11 @@ export class ScriptInjector {
         };
         
         // 监听自定义事件
-        webview.addEventListener('obsidian-tampermonkey-domcontentloaded', handleEvent);
+        webview.addEventListener('obsidian-cheekychimp-domcontentloaded', handleEvent);
         
         // 添加清理函数（避免内存泄漏）
         setTimeout(() => {
-            webview.removeEventListener('obsidian-tampermonkey-domcontentloaded', handleEvent);
+            webview.removeEventListener('obsidian-cheekychimp-domcontentloaded', handleEvent);
         }, 10000);
     }
     
@@ -1228,11 +1228,11 @@ export class ScriptInjector {
         const listenerScript = `
             if (document.readyState === 'complete') {
                 // 页面已完全加载，立即触发事件
-                window.dispatchEvent(new CustomEvent('obsidian-tampermonkey-load'));
+                window.dispatchEvent(new CustomEvent('obsidian-cheekychimp-load'));
             } else {
                 // 等待页面加载完成
             window.addEventListener('load', function() {
-                window.dispatchEvent(new CustomEvent('obsidian-tampermonkey-load'));
+                window.dispatchEvent(new CustomEvent('obsidian-cheekychimp-load'));
             });
             }
         `;
@@ -1246,11 +1246,11 @@ export class ScriptInjector {
         };
         
         // 监听自定义事件
-        webview.addEventListener('obsidian-tampermonkey-load', handleEvent);
+        webview.addEventListener('obsidian-cheekychimp-load', handleEvent);
         
         // 添加清理函数（避免内存泄漏）
         setTimeout(() => {
-            webview.removeEventListener('obsidian-tampermonkey-load', handleEvent);
+            webview.removeEventListener('obsidian-cheekychimp-load', handleEvent);
         }, 10000);
     }
     
@@ -1291,7 +1291,7 @@ export class ScriptInjector {
                 // 创建脚本元素
                 const script = iframe.contentDocument.createElement('script');
                 script.textContent = scriptContent;
-                script.setAttribute('data-tampermonkey', 'true');
+                script.setAttribute('data-cheekychimp', 'true');
                 script.setAttribute('type', 'text/javascript');
                 
                 // 增加调试日志
@@ -1435,7 +1435,7 @@ export class ScriptInjector {
             
             script.src = url;
             script.type = 'text/javascript';
-            script.setAttribute('data-tampermonkey', 'true');
+            script.setAttribute('data-cheekychimp', 'true');
             
             // 添加到iframe
             try {
@@ -1447,7 +1447,7 @@ export class ScriptInjector {
                     console.log('Tampermonkey: 通过Blob URL注入脚本到body成功');
                 } else {
                     // 如果无法访问iframe内部，尝试使用iframe.onload
-                    const scriptTag = `<script src="${url}" type="text/javascript" data-tampermonkey="true"></script>`;
+                    const scriptTag = `<script src="${url}" type="text/javascript" data-cheekychimp="true"></script>`;
                     
                     // 创建一个新的iframe作为注入容器
                     const injectionFrame = document.createElement('iframe');
@@ -1512,7 +1512,7 @@ export class ScriptInjector {
                 
                 const script = doc.createElement('script');
                 script.textContent = scriptContent;
-                script.setAttribute('data-tampermonkey', 'true');
+                script.setAttribute('data-cheekychimp', 'true');
                 doc.head.appendChild(script);
                 
                 console.log('Tampermonkey: 通过contentWindow注入成功');
@@ -1531,7 +1531,7 @@ export class ScriptInjector {
                 
                 const script = doc.createElement('script');
                 script.textContent = scriptContent;
-                script.setAttribute('data-tampermonkey', 'true');
+                script.setAttribute('data-cheekychimp', 'true');
                 doc.head.appendChild(script);
                 
                 console.log('Tampermonkey: 通过contentDocument注入成功');
@@ -1546,7 +1546,7 @@ export class ScriptInjector {
         
         // 尝试通过向webview发送特殊事件来注入脚本
         try {
-            const customEvent = new CustomEvent('obsidian-tampermonkey-inject', {
+            const customEvent = new CustomEvent('obsidian-cheekychimp-inject', {
                 detail: { script: scriptContent }
             });
             webview.dispatchEvent(customEvent);
@@ -1585,7 +1585,7 @@ export class ScriptInjector {
             localStorage.setItem(commandsKey, JSON.stringify(commands));
             
             // 创建自定义事件监听器来执行命令
-            document.addEventListener(`tampermonkey-run-command-${commandId}`, () => {
+            document.addEventListener(`cheekychimp-run-command-${commandId}`, () => {
                 try {
                     fn();
                 } catch (e) {
@@ -1594,7 +1594,7 @@ export class ScriptInjector {
             });
             
             // 创建一个通知事件，告诉Tampermonkey UI有新命令可用
-            const event = new CustomEvent('tampermonkey-command-registered', {
+            const event = new CustomEvent('cheekychimp-command-registered', {
                 detail: {
                     scriptId: script.id,
                     commandId: commandId,
@@ -1882,12 +1882,12 @@ export class ScriptInjector {
             xmlHttpRequest: window.GM_xmlhttpRequest,
             registerMenuCommand: window.GM_registerMenuCommand,
             info: {
-                scriptHandler: 'Obsidian Tampermonkey',
+                scriptHandler: 'Obsidian CheekyChimp',
                 version: '0.1.0'
             }
         };
 
-        console.log('[Tampermonkey] GM APIs 初始化完成');
+        console.log('[CheekyChimp] GM APIs 初始化完成');
         `;
     }
 
@@ -2030,4 +2030,4 @@ export class ScriptInjector {
         })();
         `;
     }
-} 
+}
