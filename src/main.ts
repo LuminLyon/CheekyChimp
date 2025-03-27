@@ -1,21 +1,21 @@
 import { App, Plugin, WorkspaceLeaf, Notice, PluginSettingTab, addIcon } from 'obsidian';
-import { TampermonkeySettingTab, TampermonkeySettings, DEFAULT_SETTINGS } from './ui/settings-tab';
+import { CheekyChimpSettingTab, CheekyChimpSettings, DEFAULT_SETTINGS } from './ui/settings-tab';
 import { ScriptManager } from './services/script-manager';
 import { ObsidianStorage } from './services/obsidian-storage';
 import { ScriptInjector } from './services/script-injector';
 import { UserScript } from './models/script';
 
-export default class TampermonkeyPlugin extends Plugin {
-    settings: TampermonkeySettings;
+export default class CheekyChimpPlugin extends Plugin {
+    settings: CheekyChimpSettings;
     scriptManager: ScriptManager;
     scriptStorage: ObsidianStorage;
     scriptInjector: ScriptInjector;
-    settingTab: TampermonkeySettingTab;
+    settingTab: CheekyChimpSettingTab;
     private editScriptHandler: EventListener;
     private createScriptHandler: EventListener;
 
     async onload() {
-        console.log('Loading Tampermonkey plugin');
+        console.log('Loading CheekyChimp plugin');
 
         // Initialize services
         this.scriptStorage = new ObsidianStorage(this);
@@ -26,7 +26,7 @@ export default class TampermonkeyPlugin extends Plugin {
         await this.loadSettings();
 
         // Register settings tab
-        this.settingTab = new TampermonkeySettingTab(this.app, this);
+        this.settingTab = new CheekyChimpSettingTab(this.app, this);
         this.addSettingTab(this.settingTab);
 
         // Load scripts into script manager
@@ -40,12 +40,12 @@ export default class TampermonkeyPlugin extends Plugin {
 
         // 添加油猴图标到ribbon
         // 使用原始油猴图标
-        addIcon('tampermonkey', `<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        addIcon('cheekychimp', `<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
             <path fill="currentColor" d="M 108.11719 0 L 0 108.11914 L 0 403.88086 L 108.11719 512 L 403.88281 512 L 512 403.88086 L 512 108.11914 L 403.88281 0 L 108.11719 0 z M 196.56055 128 L 315.43945 128 C 324.4555 128 332 135.5445 332 144.56055 L 332 196.56055 L 384 196.56055 C 393.0161 196.56055 400.56055 204.10499 400.56055 213.12109 L 400.56055 298.87891 C 400.56055 307.89501 393.0161 315.43945 384 315.43945 L 332 315.43945 L 332 367.43945 C 332 376.4555 324.4555 384 315.43945 384 L 196.56055 384 C 187.5445 384 180 376.4555 180 367.43945 L 180 315.43945 L 128 315.43945 C 118.98389 315.43945 111.43945 307.89501 111.43945 298.87891 L 111.43945 213.12109 C 111.43945 204.10499 118.98389 196.56055 128 196.56055 L 180 196.56055 L 180 144.56055 C 180 135.5445 187.5445 128 196.56055 128 z"/>
         </svg>`);
 
         // 添加ribbon图标
-        const ribbonIconEl = this.addRibbonIcon('tampermonkey', 'Tampermonkey', (evt: MouseEvent) => {
+        const ribbonIconEl = this.addRibbonIcon('cheekychimp', 'CheekyChimp', (evt: MouseEvent) => {
             // 显示活动脚本状态
             const activeScripts = this.scriptManager.getAllScripts().filter(s => s.enabled);
             if (activeScripts.length > 0) {
@@ -77,8 +77,8 @@ export default class TampermonkeyPlugin extends Plugin {
         };
 
         // 使用标准DOM事件监听
-        document.addEventListener('tampermonkey-edit-script', this.editScriptHandler);
-        document.addEventListener('tampermonkey-create-script', this.createScriptHandler);
+        document.addEventListener('cheekychimp-edit-script', this.editScriptHandler);
+        document.addEventListener('cheekychimp-create-script', this.createScriptHandler);
     }
 
     onunload() {

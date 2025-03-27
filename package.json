@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-cheekychimp",
+  "name": "cheekychimp",
   "version": "0.1.0",
   "description": "Tampermonkey for Obsidian - UserScript manager that supports using userscripts inside Obsidian's browser views",
   "main": "main.js",

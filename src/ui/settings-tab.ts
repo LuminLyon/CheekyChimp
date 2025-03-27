@@ -1,15 +1,15 @@
 import { App, PluginSettingTab, Setting, Notice, Modal, TextComponent, ButtonComponent, Menu } from 'obsidian';
-import TampermonkeyPlugin from '../main';
+import CheekyChimpPlugin from '../main';
 import { UserScript } from '../models/script';
 
-export interface TampermonkeySettings {
+export interface CheekyChimpSettings {
     scripts: UserScript[];
     automaticallyCheckForUpdates: boolean;
     updateInterval: number;
     debug: boolean;
 }
 
-export const DEFAULT_SETTINGS: TampermonkeySettings = {
+export const DEFAULT_SETTINGS: CheekyChimpSettings = {
     scripts: [],
     automaticallyCheckForUpdates: true,
     updateInterval: 24, // hours
@@ -19,10 +19,10 @@ export const DEFAULT_SETTINGS: TampermonkeySettings = {
 /**
  * Setting Tab for Tampermonkey
  */
-export class TampermonkeySettingTab extends PluginSettingTab {
-    plugin: TampermonkeyPlugin;
+export class CheekyChimpSettingTab extends PluginSettingTab {
+    plugin: CheekyChimpPlugin;
 
-    constructor(app: App, plugin: TampermonkeyPlugin) {
+    constructor(app: App, plugin: CheekyChimpPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -32,7 +32,7 @@ export class TampermonkeySettingTab extends PluginSettingTab {
         containerEl.empty();
 
         // Header
-        containerEl.createEl('h2', { text: 'Tampermonkey 设置' });
+        containerEl.createEl('h2', { text: 'CheekyChimp 设置' });
         containerEl.createEl('p', { 
             text: '这个插件允许你在Obsidian的内部浏览器中使用用户脚本。' 
         });

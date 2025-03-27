@@ -73,7 +73,7 @@
     border: 1px solid var(--background-modifier-border);
 }
 
-.tampermonkey-tooltip:hover .tampermonkey-tooltip-text {
+.cheekychimp-tooltip:hover .cheekychimp-tooltip-text {
     visibility: visible;
     opacity: 1;
-} 
+}
