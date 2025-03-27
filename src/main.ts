@@ -111,13 +111,13 @@ export default class CheekyChimpPlugin extends Plugin {
             this.app.setting.open();
             try {
                 // @ts-ignore
-                this.app.setting.openTabById('obsidian-tampermonkey');
+                this.app.setting.openTabById('obsidian-cheekychimp');
             } catch (e) {
-                console.warn('无法直接打开Tampermonkey设置标签，将打开通用设置页面');
+                console.warn('无法直接打开CheekyChimp设置标签，将打开通用设置页面');
             }
         } else {
             // 如果没有setting API，退回到简单通知
-            new Notice('无法打开设置，请从Obsidian设置中找到Tampermonkey标签');
+            new Notice('无法打开设置，请从Obsidian设置中找到CheekyChimp标签');
         }
     }
 
@@ -267,7 +267,7 @@ export default class CheekyChimpPlugin extends Plugin {
         
         // 如果是 iframe，可以尝试使用 load 事件
         if (webview instanceof HTMLIFrameElement) {
-            console.log('Tampermonkey: 处理iframe元素');
+            console.log('CheekyChimp: 处理iframe元素');
             
             // 获取当前URL
             let currentUrl = '';
@@ -276,7 +276,7 @@ export default class CheekyChimpPlugin extends Plugin {
                 // 尝试获取iframe的src
                 currentUrl = webview.src;
             } catch(e) {
-                console.warn('Tampermonkey: 无法读取iframe的src属性', e);
+                console.warn('CheekyChimp: 无法读取iframe的src属性', e);
                 currentUrl = webview.getAttribute('src') || '';
             }
             
@@ -292,23 +292,23 @@ export default class CheekyChimpPlugin extends Plugin {
                     }
                     
                     if (url) {
-                        console.log('Tampermonkey: iframe加载完成，注入脚本到', url);
+                        console.log('CheekyChimp: iframe加载完成，注入脚本到', url);
                         this.injectScriptsForUrl(webview, url);
                     }
                 } catch (e) {
-                    console.error('Tampermonkey: 处理iframe load事件出错', e);
+                    console.error('CheekyChimp: 处理iframe load事件出错', e);
                 }
             });
             
             // 立即处理当前URL
             if (currentUrl) {
-                console.log('Tampermonkey: 立即注入脚本到iframe:', currentUrl);
+                console.log('CheekyChimp: 立即注入脚本到iframe:', currentUrl);
                 this.injectScriptsForUrl(webview, currentUrl);
             }
         } 
         // 处理其他类型的 webview
         else if (webview.tagName === 'WEBVIEW' || webview.tagName === 'IFRAME') {
-            console.log('Tampermonkey: 处理webview元素');
+            console.log('CheekyChimp: 处理webview元素');
             
             // 获取当前URL
             const currentUrl = webview.getAttribute('src') || '';
@@ -319,11 +319,11 @@ export default class CheekyChimpPlugin extends Plugin {
                     try {
                         const url = event.url || webview.getAttribute('src') || '';
                         if (url) {
-                            console.log('Tampermonkey: webview导航到', url);
+                            console.log('CheekyChimp: webview导航到', url);
                             this.injectScriptsForUrl(webview, url);
                         }
                     } catch(e) {
-                        console.error('Tampermonkey: 处理webview导航事件出错', e);
+                        console.error('CheekyChimp: 处理webview导航事件出错', e);
                     }
                 });
                 
@@ -332,20 +332,20 @@ export default class CheekyChimpPlugin extends Plugin {
                     try {
                         const url = webview.getAttribute('src') || '';
                         if (url) {
-                            console.log('Tampermonkey: webview加载完成', url);
+                            console.log('CheekyChimp: webview加载完成', url);
                             this.injectScriptsForUrl(webview, url);
                         }
                     } catch(e) {
-                        console.error('Tampermonkey: 处理webview load事件出错', e);
+                        console.error('CheekyChimp: 处理webview load事件出错', e);
                     }
                 });
             } catch(e) {
-                console.warn('Tampermonkey: 添加webview事件监听器失败', e);
+                console.warn('CheekyChimp: 添加webview事件监听器失败', e);
             }
             
             // 检查当前URL
             if (currentUrl) {
-                console.log('Tampermonkey: 立即注入脚本到webview:', currentUrl);
+                console.log('CheekyChimp: 立即注入脚本到webview:', currentUrl);
                 setTimeout(() => {
                     this.injectScriptsForUrl(webview, currentUrl);
                 }, 500); // 延迟一点时间确保webview已准备好
@@ -353,13 +353,13 @@ export default class CheekyChimpPlugin extends Plugin {
         }
         // 处理其他未知元素，尝试查找内部的iframe
         else {
-            console.log('Tampermonkey: 处理未知元素，查找内部iframe');
+            console.log('CheekyChimp: 处理未知元素，查找内部iframe');
             
             // 查找内部的iframe或webview元素
             const innerWebviews = webview.querySelectorAll('iframe, webview');
             innerWebviews.forEach(innerWebview => {
                 if (innerWebview instanceof HTMLElement) {
-                    console.log('Tampermonkey: 找到内部webview元素');
+                    console.log('CheekyChimp: 找到内部webview元素');
                     this.setupWebViewListeners(innerWebview);
                 }
             });
@@ -374,7 +374,7 @@ export default class CheekyChimpPlugin extends Plugin {
         const scripts = this.scriptManager.findScriptsForUrl(url);
         
         if (scripts.length > 0) {
-            console.log(`Tampermonkey: Found ${scripts.length} scripts for ${url}`);
+            console.log(`CheekyChimp: Found ${scripts.length} scripts for ${url}`);
             // Inject scripts
             this.scriptInjector.injectScripts(webview, url, scripts);
         }
@@ -385,35 +385,35 @@ export default class CheekyChimpPlugin extends Plugin {
      */
     private loadStyles() {
         // Add the CSS class to the body for our styles
-        document.body.classList.add('tampermonkey-enabled');
+        document.body.classList.add('cheekychimp-enabled');
 
         // 添加UI样式
         const style = document.createElement('style');
-        style.id = 'tampermonkey-ui-styles';
+        style.id = 'cheekychimp-ui-styles';
         style.textContent = `
-            .tampermonkey-browser-ui {
+            .cheekychimp-browser-ui {
                 z-index: 9;
                 opacity: 0.7;
                 transition: opacity 0.3s ease;
             }
             
-            .tampermonkey-browser-ui:hover {
+            .cheekychimp-browser-ui:hover {
                 opacity: 1;
             }
             
-            .tampermonkey-icon {
+            .cheekychimp-icon {
                 opacity: 0.8;
                 transition: all 0.2s ease;
                 box-shadow: 0 0 5px rgba(0,0,0,0.1);
             }
             
-            .tampermonkey-icon:hover {
+            .cheekychimp-icon:hover {
                 background-color: var(--interactive-hover) !important;
                 transform: scale(1.1);
                 opacity: 1;
             }
             
-            .tampermonkey-menu {
+            .cheekychimp-menu {
                 box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             }
         `;

@@ -100,7 +100,7 @@ export class CheekyChimpSettingTab extends PluginSettingTab {
         // Script list
         containerEl.createEl('h3', { text: '已安装的脚本' });
         
-        const scriptListContainer = containerEl.createDiv({ cls: 'tampermonkey-script-list' });
+        const scriptListContainer = containerEl.createDiv({ cls: 'cheekychimp-script-list' });
         
         if (this.plugin.settings.scripts.length === 0) {
             scriptListContainer.createEl('p', { 
@@ -118,10 +118,10 @@ export class CheekyChimpSettingTab extends PluginSettingTab {
      * Create a script item in the list
      */
     private createScriptItem(container: HTMLElement, script: UserScript): void {
-        const scriptItem = container.createDiv({ cls: 'tampermonkey-script-item' });
+        const scriptItem = container.createDiv({ cls: 'cheekychimp-script-item' });
         
         // Enabled toggle
-        const enabledContainer = scriptItem.createDiv({ cls: 'tampermonkey-script-enabled' });
+        const enabledContainer = scriptItem.createDiv({ cls: 'cheekychimp-script-enabled' });
         const enabledToggle = new Setting(enabledContainer)
             .setName('')
             .addToggle(toggle => toggle
@@ -136,10 +136,10 @@ export class CheekyChimpSettingTab extends PluginSettingTab {
                 }));
         
         // Script name and description
-        const infoContainer = scriptItem.createDiv({ cls: 'tampermonkey-script-name' });
+        const infoContainer = scriptItem.createDiv({ cls: 'cheekychimp-script-name' });
         const nameElement = infoContainer.createEl('div', { 
             text: script.name,
-            cls: 'tampermonkey-script-name-text'
+            cls: 'cheekychimp-script-name-text'
         });
         
         // 添加双击名称编辑功能
@@ -148,7 +148,7 @@ export class CheekyChimpSettingTab extends PluginSettingTab {
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.value = script.name;
-            nameInput.className = 'tampermonkey-script-name-edit';
+            nameInput.className = 'cheekychimp-script-name-edit';
             nameInput.style.width = '100%';
             
             // 替换名称元素
@@ -199,12 +199,12 @@ export class CheekyChimpSettingTab extends PluginSettingTab {
         if (script.description) {
             infoContainer.createEl('div', { 
                 text: script.description,
-                cls: 'tampermonkey-script-description'
+                cls: 'cheekychimp-script-description'
             });
         }
         
         // Script actions (edit, delete)
-        const actionsContainer = scriptItem.createDiv({ cls: 'tampermonkey-script-actions' });
+        const actionsContainer = scriptItem.createDiv({ cls: 'cheekychimp-script-actions' });
         
         // Edit button
         const editButton = new ButtonComponent(actionsContainer)
@@ -694,7 +694,7 @@ class UrlImportModal extends Modal {
         // Input for URL
         const urlInput = new TextComponent(contentEl);
         urlInput.setPlaceholder('https://example.com/userscript.user.js');
-        urlInput.inputEl.addClass('tampermonkey-url-input');
+        urlInput.inputEl.addClass('cheekychimp-url-input');
         urlInput.inputEl.style.width = '100%';
         
         urlInput.onChange((value) => {

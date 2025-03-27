@@ -1,18 +1,18 @@
-/* Tampermonkey Plugin Styles */
+/* CheekyChimp Plugin Styles */
 
-.tampermonkey-icon {
+.cheekychimp-icon {
     color: var(--icon-color);
 }
 
-.tampermonkey-settings-header {
+.cheekychimp-settings-header {
     margin-bottom: 1em;
 }
 
-.tampermonkey-script-list {
+.cheekychimp-script-list {
     margin-bottom: 1em;
 }
 
-.tampermonkey-script-item {
+.cheekychimp-script-item {
     display: flex;
     align-items: center;
     padding: 0.5em;
@@ -21,41 +21,41 @@
     margin-bottom: 0.5em;
 }
 
-.tampermonkey-script-enabled {
+.cheekychimp-script-enabled {
     margin-right: 1em;
 }
 
-.tampermonkey-script-name {
+.cheekychimp-script-name {
     flex-grow: 1;
     font-weight: 500;
 }
 
-.tampermonkey-script-actions {
+.cheekychimp-script-actions {
     display: flex;
     gap: 0.5em;
 }
 
-.tampermonkey-editor {
+.cheekychimp-editor {
     height: 400px;
     font-family: var(--font-monospace);
 }
 
-.tampermonkey-dialog {
+.cheekychimp-dialog {
     width: 80%;
     max-width: 800px;
 }
 
-.tampermonkey-status-bar-item {
+.cheekychimp-status-bar-item {
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
-.tampermonkey-tooltip {
+.cheekychimp-tooltip {
     position: relative;
 }
 
-.tampermonkey-tooltip-text {
+.cheekychimp-tooltip-text {
     visibility: hidden;
     width: 200px;
     background-color: var(--background-secondary);

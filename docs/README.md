@@ -1,11 +1,11 @@
-# Obsidian Tampermonkey 插件文档
+# Obsidian CheekyChimp 插件文档
 
 Obsidian Tampermonkey 是一个用于在 Obsidian 内置浏览器中运行用户脚本的插件，类似于浏览器中的 Tampermonkey 扩展。
 
 ## 项目结构
 
 ```
-obsidian-tampermonkey/
+obsidian-cheekychimp/
 ├── src/                 # 源代码目录
 │   ├── models/          # 数据模型定义
 │   ├── services/        # 业务逻辑服务
