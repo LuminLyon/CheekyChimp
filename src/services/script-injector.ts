@@ -22,64 +22,84 @@ export class ScriptInjector {
      * Inject scripts into a webview
      */
     async injectScripts(webview: HTMLElement, url: string, scripts: UserScript[]): Promise<void> {
-        if (!webview) return;
-        
-        console.log(`Tampermonkey: 准备向 ${url} 注入 ${scripts.length} 个脚本`);
-        
-        // 分类脚本按照run-at属性
-        const documentStartScripts = scripts.filter(s => s.runAt === 'document-start');
-        const documentEndScripts = scripts.filter(s => s.runAt === 'document-end');
-        const documentIdleScripts = scripts.filter(s => s.runAt === 'document-idle' || !s.runAt);
-        
-        // 针对iframe类型的处理
-        if (webview instanceof HTMLIFrameElement) {
-            try {
-                // 针对B站等特殊网站添加额外支持
-                if (url.includes('bilibili.com')) {
-                    console.log('Tampermonkey: 检测到B站页面，设置特殊处理');
-                    this.setupBilibiliSupport(webview);
-                }
-                
-                // 注入document-start脚本
-        for (const script of documentStartScripts) {
-            await this.injectScript(webview, url, script);
+        if (!webview || !url || !scripts || scripts.length === 0) {
+            console.log('CheekyChimp: 没有可注入的脚本或无效的参数');
+            return;
         }
         
-                // 处理document-end脚本
-        this.injectContentLoadedListener(webview, url, documentEndScripts);
+        console.log(`CheekyChimp: 准备向 ${url} 注入 ${scripts.length} 个脚本`);
         
-                // 处理document-idle脚本
-        this.injectLoadListener(webview, url, documentIdleScripts);
-            } catch (error) {
-                console.error(`Tampermonkey: 注入脚本过程出错:`, error);
-            }
-        } 
-        // 针对其他类型webview的处理
-        else if (webview.tagName === 'WEBVIEW') {
-            try {
-                // 尝试调用executeJavaScript方法
-                const webviewEl = webview as any;
-                if (typeof webviewEl.executeJavaScript === 'function') {
-                    // 注入GM API
-                    const gmAPIs = this.generateSimpleGMAPIs();
-                    await webviewEl.executeJavaScript(gmAPIs);
+        try {
+            // 分类脚本按照run-at属性
+            const documentStartScripts = scripts.filter(s => s.runAt === 'document-start');
+            const documentEndScripts = scripts.filter(s => s.runAt === 'document-end');
+            const documentIdleScripts = scripts.filter(s => s.runAt === 'document-idle' || !s.runAt);
+            
+            // 针对iframe类型的处理
+            if (webview instanceof HTMLIFrameElement) {
+                try {
+                    // 针对B站等特殊网站添加额外支持
+                    if (url.includes('bilibili.com')) {
+                        console.log('CheekyChimp: 检测到B站页面，设置特殊处理');
+                        this.setupBilibiliSupport(webview);
+                    }
                     
-                    // 注入所有脚本
-                    for (const script of scripts) {
-                        const processedCode = await this.preprocessScript(script);
-                        await webviewEl.executeJavaScript(processedCode);
+                    // 注入document-start脚本
+                    for (const script of documentStartScripts) {
+                        await this.injectScript(webview, url, script);
                     }
-                } else {
-                    // 使用DOM方式注入
-                    console.log('Tampermonkey: 使用DOM方式注入脚本');
-                    for (const script of scripts) {
-                        const processedCode = await this.preprocessScript(script);
-                        await this.executeScriptInWebView(webview, processedCode);
-                    }
+                    
+                    // 处理document-end脚本
+                    this.injectContentLoadedListener(webview, url, documentEndScripts);
+                    
+                    // 处理document-idle脚本
+                    this.injectLoadListener(webview, url, documentIdleScripts);
+                } catch (error) {
+                    console.error(`CheekyChimp: 注入脚本过程出错:`, error);
                 }
-            } catch (error) {
-                console.error(`Tampermonkey: 注入WebView脚本失败:`, error);
+            } 
+            // 针对其他类型webview的处理
+            else if (webview.tagName === 'WEBVIEW') {
+                try {
+                    const webviewEl = webview as any;
+                    
+                    // 检查是否支持executeJavaScript方法
+                    const canExecuteJS = typeof webviewEl.executeJavaScript === 'function';
+                    
+                    if (canExecuteJS) {
+                        // 注入GM API
+                        const gmAPIs = this.generateSimpleGMAPIs();
+                        await webviewEl.executeJavaScript(gmAPIs);
+                        
+                        // 注入所有脚本
+                        for (const script of scripts) {
+                            try {
+                                const processedCode = await this.preprocessScript(script);
+                                await webviewEl.executeJavaScript(processedCode);
+                                console.log(`CheekyChimp: 成功注入脚本 "${script.name}"`);
+                            } catch (scriptError) {
+                                console.error(`CheekyChimp: 注入脚本 "${script.name}" 失败:`, scriptError);
+                            }
+                        }
+                    } else {
+                        // 使用DOM方式注入
+                        console.log('CheekyChimp: 使用DOM方式注入脚本');
+                        for (const script of scripts) {
+                            try {
+                                const processedCode = await this.preprocessScript(script);
+                                await this.executeScriptInWebView(webview, processedCode);
+                                console.log(`CheekyChimp: 成功注入脚本 "${script.name}"`);
+                            } catch (scriptError) {
+                                console.error(`CheekyChimp: 注入脚本 "${script.name}" 失败:`, scriptError);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error(`CheekyChimp: 注入WebView脚本失败:`, error);
+                }
             }
+        } catch (error) {
+            console.error(`CheekyChimp: 注入脚本过程中发生未预期的错误:`, error);
         }
     }
     
@@ -88,7 +108,7 @@ export class ScriptInjector {
      */
     private async injectScript(webview: HTMLElement, url: string, script: UserScript): Promise<void> {
         try {
-            console.log(`Tampermonkey: 开始注入脚本 "${script.name}"`);
+            console.log(`CheekyChimp: 开始注入脚本 "${script.name}"`);
             
             // 处理外部依赖和资源
             const processedCode = await this.preprocessScript(script);
@@ -112,9 +132,9 @@ export class ScriptInjector {
                     await this.injectScriptOnLoad(webview, scriptWrapper);
             }
             
-            console.log(`Tampermonkey: 脚本 "${script.name}" 注入成功`);
+            console.log(`CheekyChimp: 脚本 "${script.name}" 注入成功`);
         } catch (error) {
-            console.error(`Tampermonkey: 注入脚本 "${script.name}" 失败:`, error);
+            console.error(`CheekyChimp: 注入脚本 "${script.name}" 失败:`, error);
         }
     }
     
@@ -126,7 +146,7 @@ export class ScriptInjector {
                 await this.executeScriptInWebView(webview, scriptContent);
             }
         } catch (error) {
-            console.error('Tampermonkey: 立即注入脚本失败:', error);
+            console.error('CheekyChimp: 立即注入脚本失败:', error);
             throw error;
         }
     }
@@ -223,7 +243,7 @@ export class ScriptInjector {
         
         // 创建一个通用的XML HTTP请求处理函数，同时支持GM.xmlHttpRequest和GM_xmlhttpRequest
         const commonXmlHttpRequest = (details: any): any => {
-            console.log(`Tampermonkey: 执行xmlhttpRequest ${details.url}`);
+            console.log(`CheekyChimp: 执行xmlhttpRequest ${details.url}`);
             try {
                 // 创建一个简单的xhr对象和取消控制器
                 const abortController = new AbortController();
@@ -252,7 +272,7 @@ export class ScriptInjector {
                 const isConnectAllowed = this.isConnectAllowed(hostname, connectDomains);
                 
                 if (!isConnectAllowed) {
-                    console.warn(`Tampermonkey: 请求 ${hostname} 不在@connect列表中，可能被阻止`);
+                    console.warn(`CheekyChimp: 请求 ${hostname} 不在@connect列表中，可能被阻止`);
                     // 继续执行，但记录警告
                 }
                 
@@ -314,7 +334,7 @@ export class ScriptInjector {
                 
                 return returnObj;
             } catch (error) {
-                console.error('Tampermonkey: XMLHttpRequest执行失败:', error);
+                console.error('CheekyChimp: XMLHttpRequest执行失败:', error);
                 if (details.onerror && typeof details.onerror === 'function') {
                     details.onerror(error);
                 }
@@ -421,7 +441,7 @@ export class ScriptInjector {
             
             // Resource functions
             GM_getResourceText: (name: string): string => {
-                console.log(`Tampermonkey: 获取资源文本 ${name}`);
+                console.log(`CheekyChimp: 获取资源文本 ${name}`);
                 try {
                     // 从脚本的@resource元数据中查找资源URL
                     const resourceMap = script.resources.reduce((map, res) => {
@@ -431,7 +451,7 @@ export class ScriptInjector {
                     
                     const resourceUrl = resourceMap[name];
                     if (!resourceUrl) {
-                        console.warn(`Tampermonkey: 资源 ${name} 未找到`);
+                        console.warn(`CheekyChimp: 资源 ${name} 未找到`);
                 return '';
                     }
                     
@@ -439,13 +459,13 @@ export class ScriptInjector {
                     const cacheKey = `cheekychimp_resource:${script.id}:${name}`;
                     const cachedResource = localStorage.getItem(cacheKey);
                     if (cachedResource) {
-                        console.log(`Tampermonkey: 使用缓存的资源 ${name}`);
+                        console.log(`CheekyChimp: 使用缓存的资源 ${name}`);
                         return cachedResource;
                     }
                     
                     // 如果没有缓存，通过同步方式返回空字符串
                     // 并在后台获取资源以便下次使用
-                    console.log(`Tampermonkey: 资源${name}未缓存，启动后台加载`);
+                    console.log(`CheekyChimp: 资源${name}未缓存，启动后台加载`);
                     
                     // 在后台异步加载
                     setTimeout(() => {
@@ -460,19 +480,19 @@ export class ScriptInjector {
                                 // 缓存获取的资源
                                 try {
                                     localStorage.setItem(cacheKey, text);
-                                    console.log(`Tampermonkey: 已缓存资源 ${name} 供下次使用`);
+                                    console.log(`CheekyChimp: 已缓存资源 ${name} 供下次使用`);
                                 } catch (e) {
-                                    console.warn('Tampermonkey: 无法缓存资源，可能超出存储限制', e);
+                                    console.warn('CheekyChimp: 无法缓存资源，可能超出存储限制', e);
                                 }
                             })
                             .catch(error => {
-                                console.error(`Tampermonkey: 后台获取资源 ${name} 失败:`, error);
+                                console.error(`CheekyChimp: 后台获取资源 ${name} 失败:`, error);
                             });
                     }, 0);
                     
                     return ''; // 首次调用返回空字符串
                 } catch (error) {
-                    console.error(`Tampermonkey: 获取资源 ${name} 失败:`, error);
+                    console.error(`CheekyChimp: 获取资源 ${name} 失败:`, error);
                     return '';
                 }
             },
@@ -486,13 +506,13 @@ export class ScriptInjector {
                     
                     const resourceUrl = resourceMap[name];
                     if (!resourceUrl) {
-                        console.warn(`Tampermonkey: 资源 ${name} 未找到`);
+                        console.warn(`CheekyChimp: 资源 ${name} 未找到`);
                 return '';
                     }
                     
                     return resourceUrl;
                 } catch (error) {
-                    console.error(`Tampermonkey: 获取资源URL ${name} 失败:`, error);
+                    console.error(`CheekyChimp: 获取资源URL ${name} 失败:`, error);
                     return '';
                 }
             },
@@ -505,7 +525,7 @@ export class ScriptInjector {
                     style.setAttribute('data-cheekychimp-style', script.id);
                 document.head.appendChild(style);
                 } catch (e) {
-                    console.error('Tampermonkey: 添加样式失败:', e);
+                    console.error('CheekyChimp: 添加样式失败:', e);
                 }
             },
             
@@ -552,9 +572,9 @@ export class ScriptInjector {
                     });
                     document.dispatchEvent(event);
                     
-                    console.log(`Tampermonkey: 已注销菜单命令 ID ${menuCmdId}`);
+                    console.log(`CheekyChimp: 已注销菜单命令 ID ${menuCmdId}`);
                 } catch (e) {
-                    console.error(`Tampermonkey: 注销菜单命令 ID ${menuCmdId} 失败:`, e);
+                    console.error(`CheekyChimp: 注销菜单命令 ID ${menuCmdId} 失败:`, e);
                 }
             },
             
@@ -600,7 +620,7 @@ export class ScriptInjector {
                 try {
                     // 定义基本的GM信息对象
                     const GM_info = ${JSON.stringify(gmApi.GM_info)};
-                    console.log('Tampermonkey: 准备执行脚本 "${script.name}"', GM_info);
+                    console.log('CheekyChimp: 准备执行脚本 "${script.name}"', GM_info);
                     
                     // 定义GM API函数
                     const GM_getValue = function(name, defaultValue) {
@@ -634,7 +654,7 @@ export class ScriptInjector {
                             document.head.appendChild(style);
                             return style;
                         } catch(e) {
-                            console.error('Tampermonkey: GM_addStyle错误', e);
+                            console.error('CheekyChimp: GM_addStyle错误', e);
                         }
                     };
                     
@@ -669,7 +689,7 @@ export class ScriptInjector {
                     
                     // 提供其他必要的GM API函数
                     const GM_registerMenuCommand = function(name, fn, accessKey) {
-                        console.log('Tampermonkey: 脚本注册菜单命令:', name);
+                        console.log('CheekyChimp: 脚本注册菜单命令:', name);
                         // 存储命令到本地存储
                         const commandId = Date.now() + Math.floor(Math.random() * 1000);
                         const commandsKey = 'cheekychimp_commands:${script.id}';
@@ -727,12 +747,12 @@ export class ScriptInjector {
                                     try {
                                         fn();
                                     } catch(e) {
-                                        console.error('Tampermonkey: 执行命令失败', e);
+                                        console.error('CheekyChimp: 执行命令失败', e);
                                     }
                                 });
                                 menuContainer.appendChild(commandButton);
                             } catch(e) {
-                                console.error('Tampermonkey: 创建菜单项失败', e);
+                                console.error('CheekyChimp: 创建菜单项失败', e);
                             }
                         }, 500);
                         
@@ -795,7 +815,7 @@ export class ScriptInjector {
                             // 返回一个模拟的XMLHttpRequest对象，带有abort方法
                             return { abort: function() { console.log('Request aborted'); } };
                         } catch(e) {
-                            console.error('Tampermonkey: GM_xmlhttpRequest错误', e);
+                            console.error('CheekyChimp: GM_xmlhttpRequest错误', e);
                             if (details.onerror) {
                                 details.onerror(e);
                             }
@@ -847,7 +867,7 @@ export class ScriptInjector {
                     // 针对沉浸式翻译的特殊处理
                     if (${isImmersiveTranslate}) {
                         // 确保不会由于跨域XHR请求失败
-                        console.log('Tampermonkey: 检测到沉浸式翻译脚本，添加特殊处理');
+                        console.log('CheekyChimp: 检测到沉浸式翻译脚本，添加特殊处理');
                         
                         // 修复可能需要的全局对象
                         window.browser = window.browser || {};
@@ -899,20 +919,20 @@ export class ScriptInjector {
                                     }
                                 \`;
                                 document.head.appendChild(immersiveStyles);
-                                console.log('Tampermonkey: 已添加沉浸式翻译基础样式');
+                                console.log('CheekyChimp: 已添加沉浸式翻译基础样式');
                             }
                         } catch (e) {
-                            console.error('Tampermonkey: 添加沉浸式翻译样式失败:', e);
+                            console.error('CheekyChimp: 添加沉浸式翻译样式失败:', e);
                         }
                         
                         // 添加DOM观察器，确保body存在时添加按钮
                         const addTranslationButton = () => {
                             try {
-                                console.log('Tampermonkey: 尝试强制显示沉浸式翻译UI');
+                                console.log('CheekyChimp: 尝试强制显示沉浸式翻译UI');
                                 
                                 // 检查是否已存在按钮
                                 if (document.getElementById('immersive-translate-button')) {
-                                    console.log('Tampermonkey: 沉浸式翻译按钮已存在');
+                                    console.log('CheekyChimp: 沉浸式翻译按钮已存在');
                                     return;
                                 }
                                 
@@ -950,7 +970,7 @@ export class ScriptInjector {
                                                             const cmdId = cmd.id;
                                                             const cmdEvent = new CustomEvent('cheekychimp-run-command-' + cmdId);
                                                             document.dispatchEvent(cmdEvent);
-                                                            console.log('Tampermonkey: 执行沉浸式翻译命令:', cmd.name);
+                                                            console.log('CheekyChimp: 执行沉浸式翻译命令:', cmd.name);
                                                             break;
                                                         }
                                                     }
@@ -960,15 +980,15 @@ export class ScriptInjector {
                                             }
                                         }
                                     } catch (e) {
-                                        console.error('Tampermonkey: 触发翻译失败:', e);
+                                        console.error('CheekyChimp: 触发翻译失败:', e);
                                         // 回退：如果无法触发内部翻译，显示消息
                                         alert('沉浸式翻译初始化中，请稍后再试或刷新页面');
                                     }
                                 });
                                 
-                                console.log('Tampermonkey: 已添加沉浸式翻译UI');
+                                console.log('CheekyChimp: 已添加沉浸式翻译UI');
                             } catch (e) {
-                                console.error('Tampermonkey: 添加沉浸式翻译UI失败:', e);
+                                console.error('CheekyChimp: 添加沉浸式翻译UI失败:', e);
                             }
                         };
                         
@@ -982,19 +1002,19 @@ export class ScriptInjector {
                             
                             // 监听DOMContentLoaded事件
                             window.addEventListener('DOMContentLoaded', () => {
-                                console.log('Tampermonkey: DOMContentLoaded 触发');
+                                console.log('CheekyChimp: DOMContentLoaded 触发');
                                 setTimeout(addTranslationButton, 500);
                             });
                             
                             // 监听load事件
                             window.addEventListener('load', () => {
-                                console.log('Tampermonkey: window.load 触发');
+                                console.log('CheekyChimp: window.load 触发');
                                 setTimeout(addTranslationButton, 1000);
                             });
                             
                             // 设置DOM观察器以防上述事件都不触发
                             if (!document.body) {
-                                console.log('Tampermonkey: 设置body观察器');
+                                console.log('CheekyChimp: 设置body观察器');
                                 const bodyObserver = new MutationObserver(() => {
                                     if (document.body) {
                                         bodyObserver.disconnect();
@@ -1008,7 +1028,7 @@ export class ScriptInjector {
                             // 设置超时检查
                             setTimeout(() => {
                                 if (document.body && !document.getElementById('immersive-translate-button')) {
-                                    console.log('Tampermonkey: 超时检查，尝试添加按钮');
+                                    console.log('CheekyChimp: 超时检查，尝试添加按钮');
                                     addTranslationButton();
                                 }
                             }, 2000);
@@ -1016,7 +1036,7 @@ export class ScriptInjector {
                             // 添加按钮自动检查逻辑，确保按钮存在
                             const checkButtonInterval = setInterval(() => {
                                 if (document.body && !document.getElementById('immersive-translate-button')) {
-                                    console.log('Tampermonkey: 沉浸式翻译按钮不存在，重新添加');
+                                    console.log('CheekyChimp: 沉浸式翻译按钮不存在，重新添加');
                                     addTranslationButton();
                                 }
                             }, 5000);
@@ -1034,7 +1054,7 @@ export class ScriptInjector {
                     // 执行实际脚本
                     ${scriptContent}
                 } catch(e) {
-                    console.error('Tampermonkey: 脚本执行错误', e);
+                    console.error('CheekyChimp: 脚本执行错误', e);
                 }
             })();
         `;
@@ -1257,77 +1277,93 @@ export class ScriptInjector {
     /**
      * Execute a script in a webview
      */
-    private executeScript(webview: HTMLElement, scriptContent: string): void {
-        try {
-            if (webview instanceof HTMLIFrameElement) {
-                // 处理iframe元素
-                this.executeScriptInIframe(webview, scriptContent);
-            } else if (webview.tagName === 'WEBVIEW') {
-                // 处理webview元素
-                this.executeScriptInWebView(webview, scriptContent);
-            } else {
-                console.warn('不支持的webview类型:', webview.tagName);
+    private executeScript(webview: HTMLElement, scriptContent: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            try {
+                if (webview instanceof HTMLIFrameElement) {
+                    // 处理iframe元素
+                    this.executeScriptInIframe(webview, scriptContent)
+                        .then(resolve)
+                        .catch(reject);
+                } else if (webview.tagName === 'WEBVIEW') {
+                    // 处理webview元素
+                    this.executeScriptInWebView(webview, scriptContent)
+                        .then(resolve)
+                        .catch(reject);
+                } else {
+                    console.warn('不支持的webview类型:', webview.tagName);
+                    reject(new Error('不支持的webview类型'));
+                }
+            } catch (error) {
+                console.error('执行脚本时出错:', error);
+                reject(error);
             }
-        } catch (error) {
-            console.error('执行脚本时出错:', error);
-        }
+        });
     }
 
     /**
      * 在iframe中执行脚本
      */
-    private executeScriptInIframe(iframe: HTMLIFrameElement, scriptContent: string): void {
-        try {
-            // 确保iframe已加载并可访问
-            if (!iframe.contentWindow || !iframe.contentDocument) {
-                console.warn('Tampermonkey: 无法访问iframe内容，可能是跨域限制');
-                // 使用URL方法注入
-                this.tryExecuteViaURL(iframe, scriptContent);
-                return;
-            }
-
-            // 直接在iframe的head中添加脚本
+    private executeScriptInIframe(iframe: HTMLIFrameElement, scriptContent: string): Promise<void> {
+        return new Promise((resolve, reject) => {
             try {
-                // 创建脚本元素
-                const script = iframe.contentDocument.createElement('script');
-                script.textContent = scriptContent;
-                script.setAttribute('data-cheekychimp', 'true');
-                script.setAttribute('type', 'text/javascript');
-                
-                // 增加调试日志
-                console.log('Tampermonkey: 正在注入脚本到iframe');
-                
-                // 添加到iframe文档中
-                if (iframe.contentDocument.head) {
-                    iframe.contentDocument.head.appendChild(script);
-                    console.log('Tampermonkey: 脚本已注入到iframe head');
+                // 确保iframe已加载并可访问
+                if (!iframe.contentWindow || !iframe.contentDocument) {
+                    console.warn('CheekyChimp: 无法访问iframe内容，可能是跨域限制');
+                    // 使用URL方法注入
+                    this.tryExecuteViaURL(iframe, scriptContent)
+                        .then(resolve)
+                        .catch(reject);
+                    return;
+                }
+
+                // 直接在iframe的head中添加脚本
+                try {
+                    // 创建脚本元素
+                    const script = iframe.contentDocument.createElement('script');
+                    script.textContent = scriptContent;
+                    script.setAttribute('data-cheekychimp', 'true');
+                    script.setAttribute('type', 'text/javascript');
                     
-                    // 添加MutationObserver监听DOM变化，确保对bilibili等特定网站的支持
-                    if (iframe.src.includes('bilibili.com')) {
-                        console.log('Tampermonkey: 检测到B站页面，设置DOM变化监听器');
-                        this.setupBilibiliSupport(iframe);
+                    // 增加调试日志
+                    console.log('CheekyChimp: 正在注入脚本到iframe');
+                    
+                    // 添加到iframe文档中
+                    if (iframe.contentDocument.head) {
+                        iframe.contentDocument.head.appendChild(script);
+                        console.log('CheekyChimp: 脚本已注入到iframe head');
+                        
+                        // 添加MutationObserver监听DOM变化，确保对bilibili等特定网站的支持
+                        if (iframe.src.includes('bilibili.com')) {
+                            console.log('CheekyChimp: 检测到B站页面，设置DOM变化监听器');
+                            this.setupBilibiliSupport(iframe);
+                        }
+                    } else if (iframe.contentDocument.documentElement) {
+                        // 如果没有head，尝试添加到documentElement
+                        iframe.contentDocument.documentElement.appendChild(script);
+                        console.log('CheekyChimp: 脚本已注入到iframe documentElement');
+                    } else {
+                        // 最后尝试添加到body
+                        iframe.contentDocument.body?.appendChild(script);
+                        console.log('CheekyChimp: 脚本已注入到iframe body');
                     }
-                } else if (iframe.contentDocument.documentElement) {
-                    // 如果没有head，尝试添加到documentElement
-                    iframe.contentDocument.documentElement.appendChild(script);
-                    console.log('Tampermonkey: 脚本已注入到iframe documentElement');
-                } else {
-                    // 最后尝试添加到body
-                    iframe.contentDocument.body?.appendChild(script);
-                    console.log('Tampermonkey: 脚本已注入到iframe body');
+                } catch (error) {
+                    console.error('CheekyChimp: 通过DOM方式注入脚本失败:', error);
+                    // 尝试使用eval方式
+                    this.tryExecuteViaEval(iframe, scriptContent)
+                        .then(resolve)
+                        .catch(reject);
                 }
             } catch (error) {
-                console.error('Tampermonkey: 通过DOM方式注入脚本失败:', error);
-                // 尝试使用eval方式
-                this.tryExecuteViaEval(iframe, scriptContent);
+                // 可能由于同源策略失败
+                console.error('CheekyChimp: 无法在iframe中执行脚本，可能是跨域限制:', error);
+                
+                // 尝试替代方法
+                this.tryExecuteViaURL(iframe, scriptContent)
+                    .then(resolve)
+                    .catch(reject);
             }
-        } catch (error) {
-            // 可能由于同源策略失败
-            console.error('Tampermonkey: 无法在iframe中执行脚本，可能是跨域限制:', error);
-            
-            // 尝试替代方法
-            this.tryExecuteViaURL(iframe, scriptContent);
-        }
+        });
     }
     
     /**
@@ -1341,7 +1377,7 @@ export class ScriptInjector {
             const observer = new MutationObserver((mutations) => {
                 const player = iframe.contentDocument?.querySelector('.bpx-player-ctrl-playbackrate');
                 if (player) {
-                    console.log('Tampermonkey: B站播放器已加载，重新执行相关脚本');
+                    console.log('CheekyChimp: B站播放器已加载，重新执行相关脚本');
                     
                     // 找到所有适用于B站的脚本
                     const url = iframe.src;
@@ -1364,196 +1400,218 @@ export class ScriptInjector {
                 subtree: true
             });
             
-            console.log('Tampermonkey: 已设置B站页面的DOM监听器');
+            console.log('CheekyChimp: 已设置B站页面的DOM监听器');
         } catch (error) {
-            console.error('Tampermonkey: 设置B站特殊支持失败:', error);
+            console.error('CheekyChimp: 设置B站特殊支持失败:', error);
         }
     }
     
     /**
      * 通过eval方式执行脚本（用于iframe）
      */
-    private tryExecuteViaEval(iframe: HTMLIFrameElement, scriptContent: string): void {
-        try {
-            if (iframe.contentWindow) {
-                console.log('Tampermonkey: 尝试通过eval方式执行脚本');
-                
-                // 使用Function构造器
-                try {
-                    // 使用隐式调用
-                    const scriptFunction = new Function(`
-                        try {
-                            if (window.frames[0] && window.frames[0].document) {
-                                var script = window.frames[0].document.createElement("script");
-                                script.textContent = ${JSON.stringify(scriptContent)};
-                                window.frames[0].document.head.appendChild(script);
-                                return true;
-                            }
-                        } catch(e) {
-                            console.error("Injection error:", e);
-                            return false;
-                        }
-                    `);
+    private tryExecuteViaEval(iframe: HTMLIFrameElement, scriptContent: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            try {
+                if (iframe.contentWindow) {
+                    console.log('CheekyChimp: 尝试通过eval方式执行脚本');
                     
-                    const result = scriptFunction();
-                    console.log('Tampermonkey: 通过Function构造器注入脚本' + (result ? '成功' : '失败'));
-                } catch (evalError) {
-                    console.error('Tampermonkey: Function构造器执行失败', evalError);
+                    // 使用Function构造器
+                    try {
+                        // 使用隐式调用
+                        const scriptFunction = new Function(`
+                            try {
+                                if (window.frames[0] && window.frames[0].document) {
+                                    var script = window.frames[0].document.createElement("script");
+                                    script.textContent = ${JSON.stringify(scriptContent)};
+                                    window.frames[0].document.head.appendChild(script);
+                                    return true;
+                                }
+                            } catch(e) {
+                                console.error("Injection error:", e);
+                                return false;
+                            }
+                        `);
+                        
+                        const result = scriptFunction();
+                        console.log('CheekyChimp: 通过Function构造器注入脚本' + (result ? '成功' : '失败'));
+                        resolve();
+                    } catch (evalError) {
+                        console.error('CheekyChimp: Function构造器执行失败', evalError);
+                        reject(evalError);
+                    }
                 }
+            } catch (e) {
+                console.error('CheekyChimp: 通过eval执行脚本失败:', e);
+                reject(e);
             }
-        } catch (e) {
-            console.error('Tampermonkey: 通过eval执行脚本失败:', e);
-        }
+        });
     }
     
     /**
      * 通过URL方式尝试执行脚本（用于跨域iframe）
      */
-    private tryExecuteViaURL(iframe: HTMLIFrameElement, scriptContent: string): void {
-        try {
-            console.log('Tampermonkey: 尝试通过URL方式注入脚本');
-            
-            // 创建Blob URL
-            const blob = new Blob([scriptContent], { type: 'text/javascript' });
-            const url = URL.createObjectURL(blob);
-            
-            // 创建script元素并设置src
-            let script: HTMLScriptElement;
-            
+    private tryExecuteViaURL(iframe: HTMLIFrameElement, scriptContent: string): Promise<void> {
+        return new Promise((resolve, reject) => {
             try {
-                // 尝试使用iframe的document创建元素
-                if (iframe.contentDocument) {
-                    script = iframe.contentDocument.createElement('script');
-                } else {
-                    // 回退到使用主document
+                console.log('CheekyChimp: 尝试通过URL方式注入脚本');
+                
+                // 创建Blob URL
+                const blob = new Blob([scriptContent], { type: 'text/javascript' });
+                const url = URL.createObjectURL(blob);
+                
+                // 创建script元素并设置src
+                let script: HTMLScriptElement;
+                
+                try {
+                    // 尝试使用iframe的document创建元素
+                    if (iframe.contentDocument) {
+                        script = iframe.contentDocument.createElement('script');
+                    } else {
+                        // 回退到使用主document
+                        script = document.createElement('script');
+                    }
+                } catch (e) {
+                    // 如果出错，使用主document
                     script = document.createElement('script');
                 }
-            } catch (e) {
-                // 如果出错，使用主document
-                script = document.createElement('script');
-            }
-            
-            script.src = url;
-            script.type = 'text/javascript';
-            script.setAttribute('data-cheekychimp', 'true');
-            
-            // 添加到iframe
-            try {
-                if (iframe.contentDocument && iframe.contentDocument.head) {
-                    iframe.contentDocument.head.appendChild(script);
-                    console.log('Tampermonkey: 通过Blob URL注入脚本到head成功');
-                } else if (iframe.contentDocument && iframe.contentDocument.body) {
-                    iframe.contentDocument.body.appendChild(script);
-                    console.log('Tampermonkey: 通过Blob URL注入脚本到body成功');
-                } else {
-                    // 如果无法访问iframe内部，尝试使用iframe.onload
-                    const scriptTag = `<script src="${url}" type="text/javascript" data-cheekychimp="true"></script>`;
-                    
-                    // 创建一个新的iframe作为注入容器
-                    const injectionFrame = document.createElement('iframe');
-                    injectionFrame.style.display = 'none';
-                    injectionFrame.onload = function() {
-                        try {
-                            const iframeDoc = injectionFrame.contentDocument || injectionFrame.contentWindow?.document;
-                            if (iframeDoc) {
-                                iframeDoc.open();
-                                iframeDoc.write(scriptTag);
-                                iframeDoc.close();
-                                console.log('Tampermonkey: 通过注入iframe执行脚本成功');
+                
+                script.src = url;
+                script.type = 'text/javascript';
+                script.setAttribute('data-cheekychimp', 'true');
+                
+                // 添加到iframe
+                try {
+                    if (iframe.contentDocument && iframe.contentDocument.head) {
+                        iframe.contentDocument.head.appendChild(script);
+                        console.log('CheekyChimp: 通过Blob URL注入脚本到head成功');
+                    } else if (iframe.contentDocument && iframe.contentDocument.body) {
+                        iframe.contentDocument.body.appendChild(script);
+                        console.log('CheekyChimp: 通过Blob URL注入脚本到body成功');
+                    } else {
+                        // 如果无法访问iframe内部，尝试使用iframe.onload
+                        const scriptTag = `<script src="${url}" type="text/javascript" data-cheekychimp="true"></script>`;
+                        
+                        // 创建一个新的iframe作为注入容器
+                        const injectionFrame = document.createElement('iframe');
+                        injectionFrame.style.display = 'none';
+                        injectionFrame.onload = function() {
+                            try {
+                                const iframeDoc = injectionFrame.contentDocument || injectionFrame.contentWindow?.document;
+                                if (iframeDoc) {
+                                    iframeDoc.open();
+                                    iframeDoc.write(scriptTag);
+                                    iframeDoc.close();
+                                    console.log('CheekyChimp: 通过注入iframe执行脚本成功');
+                                }
+                            } catch (e) {
+                                console.error('CheekyChimp: iframe注入失败:', e);
+                                reject(e);
                             }
-                        } catch (e) {
-                            console.error('Tampermonkey: iframe注入失败:', e);
-                        }
-                    };
-                    
-                    // 添加到主文档
-                    document.body.appendChild(injectionFrame);
-                    console.log('Tampermonkey: 创建注入用iframe成功');
+                        };
+                        
+                        // 添加到主文档
+                        document.body.appendChild(injectionFrame);
+                        console.log('CheekyChimp: 创建注入用iframe成功');
+                    }
+                } catch (e) {
+                    console.error('CheekyChimp: 无法通过Blob URL方式注入:', e);
+                    reject(e);
                 }
+                
+                // 清理URL对象
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
             } catch (e) {
-                console.error('Tampermonkey: 无法通过Blob URL方式注入:', e);
+                console.error('CheekyChimp: 通过URL注入尝试失败:', e);
+                reject(e);
             }
-            
-            // 清理URL对象
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
-        } catch (e) {
-            console.error('Tampermonkey: 通过URL注入尝试失败:', e);
-        }
+        });
     }
     
     /**
      * 在webview元素中执行脚本
      */
-    private executeScriptInWebView(webview: HTMLElement, scriptContent: string): void {
-        console.log('Tampermonkey: 尝试在webview中执行脚本');
-        
-        // 尝试使用executeJavaScript方法（Electron webview支持）
-        try {
-            // 检查是否有executeJavaScript方法 (Electron webview)
-            const electronWebview = webview as any;
-            if (typeof electronWebview.executeJavaScript === 'function') {
-                console.log('Tampermonkey: 使用executeJavaScript注入脚本');
-                electronWebview.executeJavaScript(scriptContent)
-                    .then(() => console.log('Tampermonkey: 脚本已通过executeJavaScript注入'))
-                    .catch((err: any) => console.error('Tampermonkey: executeJavaScript执行失败:', err));
-                return;
+    private executeScriptInWebView(webview: HTMLElement, scriptContent: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            try {
+                const webviewEl = webview as any;
+                
+                // 尝试使用executeJavaScript方法（优先）
+                if (typeof webviewEl.executeJavaScript === 'function') {
+                    webviewEl.executeJavaScript(scriptContent)
+                        .then(() => resolve())
+                        .catch((err: any) => {
+                            console.warn('CheekyChimp: 通过executeJavaScript注入失败，尝试备用方法', err);
+                            this.fallbackScriptInjection(webview, scriptContent)
+                                .then(resolve)
+                                .catch(reject);
+                        });
+                } else {
+                    // 使用备用方法
+                    this.fallbackScriptInjection(webview, scriptContent)
+                        .then(resolve)
+                        .catch(reject);
+                }
+            } catch (error) {
+                console.error('CheekyChimp: 执行脚本失败:', error);
+                reject(error);
             }
-        } catch (e) {
-            console.warn('Tampermonkey: 不支持executeJavaScript:', e);
-        }
-        
-        // 尝试使用contentWindow如果可用
-        try {
-            if ((webview as any).contentWindow) {
-                const win = (webview as any).contentWindow;
-                const doc = win.document;
+        });
+    }
+    
+    /**
+     * 备用脚本注入方法，尝试多种方式注入脚本
+     */
+    private fallbackScriptInjection(webview: HTMLElement, scriptContent: string): Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const webviewEl = webview as any;
                 
-                console.log('Tampermonkey: 尝试通过contentWindow注入脚本');
+                // 方法1: 尝试使用insertCSS/executeJavaScript组合（Electron webview）
+                if (typeof webviewEl.insertCSS === 'function') {
+                    try {
+                        await webviewEl.executeJavaScript(scriptContent);
+                        resolve();
+                        return;
+                    } catch (err) {
+                        console.warn('CheekyChimp: 使用Electron webview方法注入失败', err);
+                    }
+                }
                 
-                const script = doc.createElement('script');
-                script.textContent = scriptContent;
-                script.setAttribute('data-cheekychimp', 'true');
-                doc.head.appendChild(script);
+                // 方法2: 尝试内容脚本方式（Obsidian特有）
+                try {
+                    if (webviewEl.contentWindow) {
+                        const script = document.createElement('script');
+                        script.textContent = scriptContent;
+                        webviewEl.contentWindow.document.head.appendChild(script);
+                        resolve();
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('CheekyChimp: 使用contentWindow注入失败', err);
+                }
                 
-                console.log('Tampermonkey: 通过contentWindow注入成功');
-                return;
+                // 方法3: 最后的回退方法 - 使用事件传递
+                if (typeof webviewEl.send === 'function') {
+                    try {
+                        // 发送脚本内容到webview预先设置的事件监听器
+                        webviewEl.send('obsidian-cheekychimp-inject', {
+                            script: scriptContent,
+                            id: Math.random().toString(36).substr(2, 9)
+                        });
+                        resolve();
+                        return;
+                    } catch (err) {
+                        console.warn('CheekyChimp: 使用事件传递注入失败', err);
+                    }
+                }
+                
+                // 如果所有方法都失败
+                reject(new Error('CheekyChimp: 所有注入方法都失败了'));
+            } catch (error) {
+                console.error('CheekyChimp: 备用注入方法失败:', error);
+                reject(error);
             }
-        } catch (e) {
-            console.warn('Tampermonkey: 无法通过contentWindow注入:', e);
-        }
-        
-        // 尝试使用contentDocument如果可用
-        try {
-            if ((webview as any).contentDocument) {
-                const doc = (webview as any).contentDocument;
-                
-                console.log('Tampermonkey: 尝试通过contentDocument注入脚本');
-                
-                const script = doc.createElement('script');
-                script.textContent = scriptContent;
-                script.setAttribute('data-cheekychimp', 'true');
-                doc.head.appendChild(script);
-                
-                console.log('Tampermonkey: 通过contentDocument注入成功');
-                return;
-            }
-        } catch (e) {
-            console.warn('Tampermonkey: 无法通过contentDocument注入:', e);
-        }
-        
-        // 未找到直接执行方法，尝试其他方案
-        console.warn('Tampermonkey: 尝试替代方法注入脚本');
-        
-        // 尝试通过向webview发送特殊事件来注入脚本
-        try {
-            const customEvent = new CustomEvent('obsidian-cheekychimp-inject', {
-                detail: { script: scriptContent }
-            });
-            webview.dispatchEvent(customEvent);
-            console.log('Tampermonkey: 已发送脚本注入事件到webview');
-        } catch (e) {
-            console.error('Tampermonkey: 事件派发失败:', e);
-        }
+        });
     }
 
     /**
@@ -1589,7 +1647,7 @@ export class ScriptInjector {
                 try {
                     fn();
                 } catch (e) {
-                    console.error(`Tampermonkey: 执行命令 "${name}" 失败:`, e);
+                    console.error(`CheekyChimp: 执行命令 "${name}" 失败:`, e);
                 }
             });
             
@@ -1603,10 +1661,10 @@ export class ScriptInjector {
             });
             document.dispatchEvent(event);
             
-            console.log(`Tampermonkey: 已注册菜单命令 "${name}"`);
+            console.log(`CheekyChimp: 已注册菜单命令 "${name}"`);
             return commandId;
         } catch (e) {
-            console.error(`Tampermonkey: 注册菜单命令 "${name}" 失败:`, e);
+            console.error(`CheekyChimp: 注册菜单命令 "${name}" 失败:`, e);
             return -1;
         }
     }
@@ -1743,21 +1801,77 @@ export class ScriptInjector {
                         menuContainer.id = 'gm-menu-container';
                         menuContainer.style.cssText = 'position:fixed;top:10px;right:10px;z-index:9999;display:none;background:#fff;border-radius:5px;box-shadow:0 0 10px rgba(0,0,0,0.2);padding:5px 0;';
                         
-                        // 创建菜单按钮
+                        // 创建菜单按钮 - 改为半隐藏式设计
                         const menuButton = document.createElement('div');
                         menuButton.id = 'gm-menu-button';
                         menuButton.innerHTML = '⚙️';
                         menuButton.title = 'UserScript Menu';
-                        menuButton.style.cssText = 'position:fixed;top:10px;right:10px;z-index:10000;cursor:pointer;background:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 5px rgba(0,0,0,0.2);';
+                        menuButton.style.cssText = 'position:fixed;top:10px;right:-20px;z-index:10000;cursor:pointer;background:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 5px rgba(0,0,0,0.2);transition:right 0.3s ease;opacity:0.85;';
+                        
+                        // 创建一个触发区域
+                        const triggerZone = document.createElement('div');
+                        triggerZone.id = 'gm-trigger-zone';
+                        triggerZone.style.cssText = 'position:fixed;top:0;right:0;width:30px;height:50px;z-index:9999;';
                         
                         // 添加到文档
                         document.body.appendChild(menuContainer);
                         document.body.appendChild(menuButton);
+                        document.body.appendChild(triggerZone);
+                        
+                        // 鼠标移入触发区域或按钮时显示完整按钮
+                        const showFullButton = function() {
+                            menuButton.style.right = '10px';
+                        };
+                        
+                        // 鼠标移出区域时半隐藏按钮（除非菜单已打开）
+                        const hidePartialButton = function() {
+                            if (menuContainer.style.display !== 'block') {
+                                menuButton.style.right = '-20px';
+                            }
+                        };
+                        
+                        triggerZone.addEventListener('mouseenter', showFullButton);
+                        triggerZone.addEventListener('mouseleave', hidePartialButton);
+                        menuButton.addEventListener('mouseenter', showFullButton);
+                        menuButton.addEventListener('mouseleave', hidePartialButton);
                         
                         // 点击按钮显示/隐藏菜单
                         menuButton.addEventListener('click', function() {
                             const isVisible = menuContainer.style.display === 'block';
                             menuContainer.style.display = isVisible ? 'none' : 'block';
+                            
+                            // 如果菜单关闭且鼠标不在触发区域或按钮上，则再次半隐藏按钮
+                            if (isVisible) {
+                                // 检查鼠标是否在触发区域或按钮上
+                                const checkMousePos = function(e) {
+                                    const triggerRect = triggerZone.getBoundingClientRect();
+                                    const buttonRect = menuButton.getBoundingClientRect();
+                                    
+                                    const mouseInTrigger = (
+                                        e.clientX >= triggerRect.left && 
+                                        e.clientX <= triggerRect.right && 
+                                        e.clientY >= triggerRect.top && 
+                                        e.clientY <= triggerRect.bottom
+                                    );
+                                    
+                                    const mouseInButton = (
+                                        e.clientX >= buttonRect.left && 
+                                        e.clientX <= buttonRect.right && 
+                                        e.clientY >= buttonRect.top && 
+                                        e.clientY <= buttonRect.bottom
+                                    );
+                                    
+                                    if (!mouseInTrigger && !mouseInButton) {
+                                        hidePartialButton();
+                                        document.removeEventListener('mousemove', checkMousePos);
+                                    }
+                                };
+                                
+                                // 添加一次性检查
+                                setTimeout(() => {
+                                    document.addEventListener('mousemove', checkMousePos, { once: true });
+                                }, 100);
+                            }
                             
                             if (!isVisible) {
                                 // 清除旧菜单项
@@ -1946,7 +2060,7 @@ export class ScriptInjector {
         }
         
         try {
-            console.log(`Tampermonkey: 加载外部资源 ${url}`);
+            console.log(`CheekyChimp: 加载外部资源 ${url}`);
             const response = await fetch(url, {
                 cache: 'force-cache',
                 headers: {
@@ -1960,10 +2074,10 @@ export class ScriptInjector {
             
             const content = await response.text();
             this.resourceCache[url] = content;
-            console.log(`Tampermonkey: 已加载资源 ${url}`);
+            console.log(`CheekyChimp: 已加载资源 ${url}`);
             return content;
         } catch (error) {
-            console.error(`Tampermonkey: 加载资源失败 ${url}:`, error);
+            console.error(`CheekyChimp: 加载资源失败 ${url}:`, error);
             return '';
         }
     }
@@ -1993,7 +2107,7 @@ export class ScriptInjector {
                 }
                 `;
             } catch (error) {
-                console.error(`Tampermonkey: 处理资源失败 ${resource.name}:`, error);
+                console.error(`CheekyChimp: 处理资源失败 ${resource.name}:`, error);
             }
         }
         
@@ -2007,11 +2121,11 @@ export class ScriptInjector {
                 try {
                     ${content}
                 } catch(e) {
-                    console.error('Tampermonkey: 执行依赖脚本失败:', e);
+                    console.error('CheekyChimp: 执行依赖脚本失败:', e);
                 }
                 `;
             } catch (error) {
-                console.error(`Tampermonkey: 处理依赖失败 ${requireUrl}:`, error);
+                console.error(`CheekyChimp: 处理依赖失败 ${requireUrl}:`, error);
             }
         }
         

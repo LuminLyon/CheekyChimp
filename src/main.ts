@@ -4,6 +4,7 @@ import { ScriptManager } from './services/script-manager';
 import { ObsidianStorage } from './services/obsidian-storage';
 import { ScriptInjector } from './services/script-injector';
 import { UserScript } from './models/script';
+import { i18n } from './services/i18n-service';
 
 export default class CheekyChimpPlugin extends Plugin {
     settings: CheekyChimpSettings;
@@ -50,9 +51,9 @@ export default class CheekyChimpPlugin extends Plugin {
             const activeScripts = this.scriptManager.getAllScripts().filter(s => s.enabled);
             if (activeScripts.length > 0) {
                 const scriptList = activeScripts.map(s => `- ${s.name}`).join('\n');
-                new Notice(`当前启用的脚本 (${activeScripts.length}):\n${scriptList}`);
+                new Notice(`${i18n.t('active_scripts')} (${activeScripts.length}):\n${scriptList}`);
             } else {
-                new Notice('当前没有启用的脚本');
+                new Notice(i18n.t('no_active_scripts'));
             }
             
             // 打开设置页面
@@ -117,7 +118,7 @@ export default class CheekyChimpPlugin extends Plugin {
             }
         } else {
             // 如果没有setting API，退回到简单通知
-            new Notice('无法打开设置，请从Obsidian设置中找到CheekyChimp标签');
+            new Notice(i18n.t('error_open_settings'));
         }
     }
 
@@ -130,7 +131,7 @@ export default class CheekyChimpPlugin extends Plugin {
             // 打开设置页面
             this.openSettings();
             // 通知设置页面打开特定脚本
-            new Notice(`正在打开脚本 "${script.name}" 进行编辑`);
+            new Notice(i18n.t('opening_script_editor', { name: script.name }));
         }
     }
 
@@ -143,10 +144,10 @@ export default class CheekyChimpPlugin extends Plugin {
         // 生成针对当前URL的脚本模板
         const domain = new URL(url).hostname;
         const scriptTemplate = `// ==UserScript==
-// @name         针对 ${domain} 的脚本
+// @name         Script for ${domain}
 // @namespace    http://tampermonkey.net/
 // @version      0.1
-// @description  为 ${domain} 添加功能
+// @description  Add functionality to ${domain}
 // @author       You
 // @match        ${url}
 // @grant        none
@@ -155,20 +156,20 @@ export default class CheekyChimpPlugin extends Plugin {
 (function() {
     'use strict';
     
-    // 在此处添加您的代码...
-    console.log('Tampermonkey脚本已启动!');
+    // Add your code here...
+    console.log('CheekyChimp script running!');
 })();`;
 
         try {
             // 添加脚本
             const script = this.scriptManager.addScript(scriptTemplate);
-            new Notice(`已为 ${domain} 创建新脚本`);
+            new Notice(i18n.t('script_created_for_domain', { domain }));
             
             // 打开编辑器
             this.openScriptEditor(script.id);
         } catch (error) {
             console.error('创建脚本失败:', error);
-            new Notice('创建脚本失败，请查看控制台');
+            new Notice(i18n.t('error_creating_script'));
         }
     }
 
