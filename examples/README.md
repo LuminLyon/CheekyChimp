@@ -2,6 +2,8 @@
 
 这个目录包含了可以用于测试Obsidian Tampermonkey插件的用户脚本示例。
 
+[English Documentation](README_EN.md)
+
 ## 可用脚本
 
 1. **夜间模式助手.user.js** - 实现任意网站的夜间模式，支持网站白名单
