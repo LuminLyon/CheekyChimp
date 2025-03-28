@@ -10,7 +10,7 @@ CheekyChimp 是一个为 Obsidian 内置浏览器设计的用户脚本管理器�
 
 以下是插件的功能演示视频：
 
-![演示视频](examples/DEMO.mp4)
+![演示视频](examples/demo.gif)
 
 ## 功能特点
 
@@ -22,16 +22,6 @@ CheekyChimp 是一个为 Obsidian 内置浏览器设计的用户脚本管理器�
 - 友好的用户界面，便于脚本管理
 
 ## 安装方法
-
-### 从 Obsidian 社区插件库安装
-
-1. 打开 Obsidian 设置
-2. 进入「第三方插件」选项卡
-3. 禁用「安全模式」
-4. 点击「浏览」按钮
-5. 搜索「CheekyChimp」
-6. 点击安装
-7. 启用插件
 
 ### 手动安装
 
