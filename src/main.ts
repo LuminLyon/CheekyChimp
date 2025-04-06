@@ -470,7 +470,7 @@ export default class CheekyChimpPlugin extends Plugin {
                 console.warn('CheekyChimp: 无法读取iframe的src属性', e);
                 currentUrl = webview.getAttribute('src') || '';
             }
-            
+                
             // 为iframe添加load事件监听
             webview.addEventListener('load', () => {
                 try {
@@ -485,12 +485,12 @@ export default class CheekyChimpPlugin extends Plugin {
                     if (url) {
                         console.log('CheekyChimp: iframe加载完成，注入脚本到', url);
                         this.injectScriptsForUrl(webview, url);
-                    }
+                        }
                 } catch (e) {
                     console.error('CheekyChimp: 处理iframe load事件出错', e);
-                }
-            });
-            
+                    }
+                });
+                
             // 注册刷新处理程序
             if (this.scriptInjector instanceof EnhancedScriptInjector) {
                 this.scriptInjector.registerRefreshHandler(webview, currentUrl);
@@ -533,9 +533,9 @@ export default class CheekyChimpPlugin extends Plugin {
                         }
                     } catch(e) {
                         console.error('CheekyChimp: 处理webview load事件出错', e);
-                    }
-                });
-                
+                        }
+                    });
+                    
                 // 注册刷新处理程序
                 if (this.scriptInjector instanceof EnhancedScriptInjector) {
                     this.scriptInjector.registerRefreshHandler(webview, currentUrl);
@@ -724,7 +724,7 @@ export default class CheekyChimpPlugin extends Plugin {
     private injectScriptsForUrl(webview: HTMLElement, url: string): void {
         // Find matching scripts
         const scripts = this.scriptManager.findScriptsForUrl(url);
-        
+            
         if (scripts.length > 0) {
             console.log(`CheekyChimp: Found ${scripts.length} scripts for ${url}`);
             // Inject scripts
