@@ -131,7 +131,7 @@ export class EnhancedScriptInjector {
         }
         
         // 处理document-end脚本
-        this.setupContentLoadedListener(webview, url, documentEndScripts);
+        await this.setupContentLoadedListener(webview, url, documentEndScripts);
         
         // 处理document-idle脚本
         this.setupLoadListener(webview, url, documentIdleScripts);
@@ -643,11 +643,11 @@ export class EnhancedScriptInjector {
    * 为iframe设置DOMContentLoaded监听器
    * 用于document-end脚本
    */
-  private setupContentLoadedListener(
+  private async setupContentLoadedListener(
     iframe: HTMLIFrameElement, 
     url: string, 
     scripts: UserScript[]
-  ): void {
+  ): Promise<void> {
     if (!scripts.length) return;
     
     try {
@@ -665,8 +665,8 @@ export class EnhancedScriptInjector {
         } else {
           // 文档已经加载完成，直接注入
           for (const script of scripts) {
-            if (this.shouldInjectScript(iframe, script, url)) {
-              this.injectSingleScript(iframe, url, script);
+            if (await this.shouldInjectScript(iframe, script, url)) {
+              await this.injectSingleScript(iframe, url, script);
             }
           }
         }

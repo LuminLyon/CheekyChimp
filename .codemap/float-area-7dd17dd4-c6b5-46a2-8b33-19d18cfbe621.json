@@ -1,0 +1,67 @@
+{
+  "type": "float-area",
+  "_widgets": [],
+  "_widths": [],
+  "_modelData": {
+    "connections": [
+      {
+        "startWord": {
+          "uri": "/d:/Projects/Grease Monkey Script/CheekyChimp/src/main.ts",
+          "lineNumber": 34,
+          "startColumn": 10,
+          "endColumn": 22,
+          "word": "ErrorHandler",
+          "x": 156,
+          "y": 434.8000087738037,
+          "hide": false,
+          "height": 19,
+          "width": 93
+        },
+        "endWord": {
+          "uri": "/d:/Projects/Grease Monkey Script/CheekyChimp/src/services/error/error-handler.ts",
+          "lineNumber": 39,
+          "startColumn": 14,
+          "endColumn": 26,
+          "endLineNumber": 39,
+          "word": "",
+          "x": 615.7999877929688,
+          "y": 480.1999988555908,
+          "hide": true,
+          "height": 1,
+          "width": 1
+        },
+        "id": "853058e2-db1e-42dc-8c6b-b56fb1585cbc"
+      },
+      {
+        "startWord": {
+          "uri": "/d:/Projects/Grease Monkey Script/CheekyChimp/src/main.ts",
+          "lineNumber": 34,
+          "startColumn": 24,
+          "endColumn": 42,
+          "word": "ErrorHandlingLevel",
+          "x": 264,
+          "y": 434.8000087738037,
+          "hide": false,
+          "height": 19,
+          "width": 139
+        },
+        "endWord": {
+          "uri": "/d:/Projects/Grease Monkey Script/CheekyChimp/src/services/error/error-handler.ts",
+          "lineNumber": 14,
+          "startColumn": 13,
+          "endColumn": 31,
+          "endLineNumber": 14,
+          "word": "",
+          "x": 707.7999877929688,
+          "y": 261.1999988555908,
+          "hide": false,
+          "height": 19,
+          "width": 139
+        },
+        "id": "182a6788-3f11-4707-8d34-08379717ae53"
+      }
+    ],
+    "annotations": [],
+    "highlights": []
+  }
+}

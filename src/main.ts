@@ -1,4 +1,4 @@
-import { App, Plugin, WorkspaceLeaf, Notice, PluginSettingTab, addIcon, Menu } from 'obsidian';
+import { App, Plugin, WorkspaceLeaf, Notice, PluginSettingTab, addIcon, Menu, Modal } from 'obsidian';
 import { CheekyChimpSettingTab, CheekyChimpSettings, DEFAULT_SETTINGS } from './ui/settings-tab';
 import { ScriptManager } from './services/script-manager';
 import { ObsidianStorage } from './services/obsidian-storage';
@@ -75,6 +75,8 @@ export default class CheekyChimpPlugin extends Plugin {
     private injectionRecords = new Map<string, Set<string>>();
     // 用于追踪是否已添加菜单命令
     private hasAddedScriptCommands = false;
+    // 存储边栏图标引用
+    private ribbonIconEl: HTMLElement | null = null;
 
     async onload() {
         console.log('Loading CheekyChimp plugin');
@@ -128,103 +130,7 @@ export default class CheekyChimpPlugin extends Plugin {
         </svg>`);
 
         // 添加ribbon图标
-        const ribbonIconEl = this.addRibbonIcon('cheekychimp', 'CheekyChimp', (evt: MouseEvent) => {
-            // 创建UserScript菜单
-            const menu = new Menu();
-            
-            // 显示菜单标题
-            menu.addItem((item) => {
-                item.setTitle("UserScript Menu")
-                    .setDisabled(true);
-            });
-            
-            menu.addSeparator();
-            
-            // 获取所有脚本
-            const allScripts = this.scriptManager.getAllScripts();
-            
-            // 查找并添加脚本命令到菜单
-            this.addScriptCommandsToMenu(menu);
-            
-            // 如果没有找到脚本命令，显示脚本列表
-            if (!this.hasAddedScriptCommands) {
-                // 添加所有脚本到菜单
-                if (allScripts.length > 0) {
-                    // 先显示已启用的脚本
-                    const enabledScripts = allScripts.filter(s => s.enabled);
-                    enabledScripts.forEach(script => {
-                        menu.addItem((item) => {
-                            item.setTitle(script.name)
-                                .setIcon("check")
-                                .onClick(() => {
-                                    // 禁用脚本
-                                    this.scriptManager.disableScript(script.id);
-                                    new Notice(`已禁用脚本: ${script.name}`);
-                                });
-                        });
-                    });
-                    
-                    // 然后显示未启用的脚本
-                    const disabledScripts = allScripts.filter(s => !s.enabled);
-                    if (disabledScripts.length > 0 && enabledScripts.length > 0) {
-                        menu.addSeparator();
-                    }
-                    
-                    disabledScripts.forEach(script => {
-                        menu.addItem((item) => {
-                            item.setTitle(script.name)
-                                .setIcon("circle")
-                                .onClick(() => {
-                                    // 启用脚本
-                                    this.scriptManager.enableScript(script.id);
-                                    new Notice(`已启用脚本: ${script.name}`);
-                                });
-                        });
-                    });
-            } else {
-                    // 如果没有脚本，显示提示
-                    menu.addItem((item) => {
-                        item.setTitle("没有安装脚本")
-                            .setDisabled(true);
-                    });
-                }
-            }
-            
-            // 添加管理选项
-            menu.addSeparator();
-            
-            // 添加"新建脚本"选项
-            menu.addItem((item) => {
-                item.setTitle("新建脚本")
-                    .setIcon("plus")
-                    .onClick(() => {
-                        // 调用createScriptForUrl方法，创建一个新的空白脚本
-                        this.createScriptForUrl('https://example.com');
-                    });
-            });
-            
-            // 添加"导入脚本"选项
-            menu.addItem((item) => {
-                item.setTitle("导入脚本")
-                    .setIcon("upload")
-                    .onClick(() => {
-                        // 打开设置页面，因为导入功能在那里实现
-            this.openSettings();
-                    });
-            });
-            
-            // 添加"管理所有脚本"选项
-            menu.addItem((item) => {
-                item.setTitle("管理所有脚本")
-                    .setIcon("settings")
-                    .onClick(() => {
-                        this.openSettings();
-                    });
-            });
-            
-            // 在鼠标点击位置显示菜单
-            menu.showAtPosition({ x: evt.x, y: evt.y });
-        });
+        this.updateRibbonIconVisibility();
 
         // 监听脚本编辑和创建事件
         this.editScriptHandler = (e: Event) => {
@@ -253,6 +159,12 @@ export default class CheekyChimpPlugin extends Plugin {
         // 移除自定义事件监听器
         document.removeEventListener('cheekychimp-edit-script', this.editScriptHandler);
         document.removeEventListener('cheekychimp-create-script', this.createScriptHandler);
+        
+        // 确保移除边栏图标
+        if (this.ribbonIconEl) {
+            this.ribbonIconEl.remove();
+            this.ribbonIconEl = null;
+        }
     }
 
     async loadSettings() {
@@ -278,7 +190,7 @@ export default class CheekyChimpPlugin extends Plugin {
             this.app.setting.open();
             try {
                 // @ts-ignore
-                this.app.setting.openTabById('obsidian-cheekychimp');
+                this.app.setting.openTabById('cheekychimp');
             } catch (e) {
                 console.warn('无法直接打开CheekyChimp设置标签，将打开通用设置页面');
             }
@@ -484,7 +396,7 @@ export default class CheekyChimpPlugin extends Plugin {
                     
                     if (url) {
                         console.log('CheekyChimp: iframe加载完成，注入脚本到', url);
-                        this.injectScriptsForUrl(webview, url);
+                        this.injectScriptsForUrl(url, webview);
                         }
                 } catch (e) {
                     console.error('CheekyChimp: 处理iframe load事件出错', e);
@@ -499,7 +411,7 @@ export default class CheekyChimpPlugin extends Plugin {
             // 立即处理当前URL
             if (currentUrl) {
                 console.log('CheekyChimp: 立即注入脚本到iframe:', currentUrl);
-                this.injectScriptsForUrl(webview, currentUrl);
+                this.injectScriptsForUrl(currentUrl, webview);
                 }
         } 
         // 处理其他类型的 webview
@@ -516,7 +428,7 @@ export default class CheekyChimpPlugin extends Plugin {
                         const url = event.url || webview.getAttribute('src') || '';
                         if (url) {
                             console.log('CheekyChimp: webview导航到', url);
-                            this.injectScriptsForUrl(webview, url);
+                            this.injectScriptsForUrl(url, webview);
                         }
                     } catch(e) {
                         console.error('CheekyChimp: 处理webview导航事件出错', e);
@@ -529,7 +441,7 @@ export default class CheekyChimpPlugin extends Plugin {
                         const url = webview.getAttribute('src') || '';
                         if (url) {
                             console.log('CheekyChimp: webview加载完成', url);
-                            this.injectScriptsForUrl(webview, url);
+                            this.injectScriptsForUrl(url, webview);
                         }
                     } catch(e) {
                         console.error('CheekyChimp: 处理webview load事件出错', e);
@@ -548,7 +460,7 @@ export default class CheekyChimpPlugin extends Plugin {
             if (currentUrl) {
                 console.log('CheekyChimp: 立即注入脚本到webview:', currentUrl);
                 setTimeout(() => {
-                    this.injectScriptsForUrl(webview, currentUrl);
+                    this.injectScriptsForUrl(currentUrl, webview);
                 }, 500); // 延迟一点时间确保webview已准备好
             }
         }
@@ -719,9 +631,23 @@ export default class CheekyChimpPlugin extends Plugin {
     }
 
     /**
+     * 清除特定webview的所有注入记录
+     * @param webviewId webview的唯一ID
+     */
+    private clearInjectionRecords(webviewId: string): void {
+        try {
+            // 从注入记录中删除webview的所有记录
+            this.injectionRecords.delete(webviewId);
+            console.log(`${logPrefix('InjectionManager')} 已清除webview的所有注入记录: ${webviewId}`);
+        } catch (error) {
+            console.error(`${logPrefix('InjectionManager')} 清除注入记录失败:`, error);
+        }
+    }
+
+    /**
      * Inject scripts for a given URL
      */
-    private injectScriptsForUrl(webview: HTMLElement, url: string): void {
+    private injectScriptsForUrl(url: string, webview: HTMLElement): void {
         // Find matching scripts
         const scripts = this.scriptManager.findScriptsForUrl(url);
             
@@ -1126,7 +1052,7 @@ export default class CheekyChimpPlugin extends Plugin {
                     
                     // 延迟一小段时间注入，确保页面已经完全加载
                     setTimeout(() => {
-                        this.injectScriptsForUrl(iframe, url);
+                        this.injectScriptsForUrl(url, iframe);
                     }, 300);
                     
                     previousState = currentState;
@@ -1156,7 +1082,7 @@ export default class CheekyChimpPlugin extends Plugin {
             // 立即处理当前URL
             const currentUrl = iframe.src || '';
             if (currentUrl) {
-                this.injectScriptsForUrl(iframe, currentUrl);
+                this.injectScriptsForUrl(currentUrl, iframe);
             }
         } catch (error) {
             console.error(`${logPrefix('WebviewManager')} 设置iframe监听器失败:`, error);
@@ -1255,6 +1181,394 @@ export default class CheekyChimpPlugin extends Plugin {
             });
         } catch (error) {
             console.error('注册刷新处理程序时出错:', error);
+        }
+    }
+
+    /**
+     * 刷新指定webview的脚本注入
+     * @param webview 目标webview元素
+     * @param url 当前URL
+     */
+    private refreshInjection(webview: HTMLElement, url: string): void {
+        try {
+            // 获取webview ID
+            const webviewId = this.getWebviewId(webview);
+            
+            // 清除当前注入记录
+            this.clearInjectionRecords(webviewId);
+            
+            // 重新注入脚本
+            console.log(`${logPrefix('WebviewManager')} 重新注入脚本: ${url}`);
+            this.injectScriptsForUrl(url, webview);
+        } catch (error) {
+            console.error(`${logPrefix('WebviewManager')} 刷新脚本注入失败:`, error);
+        }
+    }
+
+    /**
+     * 从文件导入用户脚本
+     */
+    importScriptFromFile(): void {
+        // 创建隐藏的文件输入元素
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.js,.user.js';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+        
+        // 监听文件选择事件
+        fileInput.addEventListener('change', async (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            const files = target.files;
+            
+            if (files && files.length > 0) {
+                const file = files[0];
+                try {
+                    // 读取文件内容
+                    const content = await this.readFileContent(file);
+                    
+                    // 将脚本添加到管理器
+                    const script = this.scriptManager.addScript(content);
+                    
+                    // 显示通知
+                    new Notice(`已成功导入脚本: ${script.name}`);
+                    
+                    // 可选：打开脚本编辑器
+                    this.openScriptEditor(script.id);
+                } catch (error) {
+                    console.error('导入脚本失败:', error);
+                    new Notice('导入脚本失败: ' + (error instanceof Error ? error.message : String(error)));
+                }
+            }
+            
+            // 移除文件输入元素
+            document.body.removeChild(fileInput);
+        });
+        
+        // 触发点击事件
+        fileInput.click();
+    }
+    
+    /**
+     * 读取文件内容
+     */
+    private async readFileContent(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (e.target && typeof e.target.result === 'string') {
+                    resolve(e.target.result);
+                } else {
+                    reject(new Error('读取文件内容失败'));
+                }
+            };
+            reader.onerror = (e) => {
+                reject(new Error('读取文件出错'));
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    /**
+     * 创建一个新的空白脚本
+     * 与createScriptForUrl不同，这个方法直接打开编辑界面而不经过设置页面
+     */
+    createNewScript(): void {
+        // 弹出对话框询问用户脚本适用的URL
+        const modal = new Modal(this.app);
+        modal.titleEl.setText("创建新脚本");
+        
+        const contentEl = modal.contentEl;
+        contentEl.empty();
+        
+        // 添加说明文本
+        contentEl.createEl("p", { text: "请输入脚本适用的网址:" });
+        
+        // 添加URL输入框
+        const urlInputContainer = contentEl.createDiv();
+        const urlInput = urlInputContainer.createEl("input", { 
+            type: "text",
+            value: "https://example.com"
+        });
+        urlInput.style.width = "100%";
+        urlInput.style.marginBottom = "10px";
+        
+        // 添加按钮容器
+        const buttonContainer = contentEl.createDiv();
+        buttonContainer.style.display = "flex";
+        buttonContainer.style.justifyContent = "flex-end";
+        buttonContainer.style.marginTop = "10px";
+        
+        // 添加取消按钮
+        const cancelButton = buttonContainer.createEl("button", { text: "取消" });
+        cancelButton.style.marginRight = "10px";
+        cancelButton.addEventListener("click", () => {
+            modal.close();
+        });
+        
+        // 添加创建按钮
+        const createButton = buttonContainer.createEl("button", { text: "创建" });
+        createButton.addClass("mod-cta");
+        createButton.addEventListener("click", () => {
+            const url = urlInput.value.trim();
+            if (url) {
+                this.createScriptWithEditor(url);
+                modal.close();
+            } else {
+                new Notice("请输入有效的URL");
+            }
+        });
+        
+        // 打开模态框
+        modal.open();
+    }
+    
+    /**
+     * 直接创建脚本并打开编辑器，不经过设置页面
+     */
+    private createScriptWithEditor(url: string): void {
+        if (!url) return;
+        
+        try {
+            // 生成针对当前URL的脚本模板
+            const domain = new URL(url).hostname || url;
+            const scriptTemplate = `// ==UserScript==
+// @name         脚本: ${domain}
+// @namespace    http://obsidian.md/
+// @version      0.1
+// @description  为 ${domain} 添加功能
+// @author       You
+// @match        ${url}
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    
+    // 在此添加您的代码...
+    console.log('CheekyChimp 脚本运行中!');
+})();`;
+
+            // 添加脚本
+            const script = this.scriptManager.addScript(scriptTemplate);
+            new Notice(`已创建脚本: ${script.name}`);
+            
+            // 直接打开编辑器而不是设置页面
+            this.openScriptEditorDirectly(script.id);
+            
+        } catch (error) {
+            console.error('创建脚本失败:', error);
+            new Notice('创建脚本失败: ' + (error instanceof Error ? error.message : String(error)));
+        }
+    }
+    
+    /**
+     * 直接打开脚本编辑器，不经过设置页面
+     * 这需要一个自定义的编辑器实现
+     */
+    private openScriptEditorDirectly(scriptId: string): void {
+        // 获取脚本
+        const script = this.scriptManager.getScript(scriptId);
+        if (!script) {
+            new Notice("找不到脚本");
+            return;
+        }
+        
+        // 创建编辑器模态框
+        const modal = new Modal(this.app);
+        modal.titleEl.setText(`编辑脚本: ${script.name}`);
+        
+        const contentEl = modal.contentEl;
+        contentEl.empty();
+        contentEl.style.height = "80vh";
+        contentEl.style.width = "80vw";
+        contentEl.style.display = "flex";
+        contentEl.style.flexDirection = "column";
+        
+        // 创建顶部信息栏
+        const infoBar = contentEl.createDiv();
+        infoBar.style.marginBottom = "10px";
+        infoBar.style.display = "flex";
+        infoBar.style.justifyContent = "space-between";
+        
+        // 显示脚本信息
+        const infoDiv = infoBar.createDiv();
+        infoDiv.createEl("span", { text: `ID: ${script.id}` }).style.marginRight = "10px";
+        infoDiv.createEl("span", { text: `版本: ${script.version || "未知"}` }).style.marginRight = "10px";
+        
+        // 创建启用/禁用开关
+        const toggleDiv = infoBar.createDiv();
+        const toggleLabel = toggleDiv.createEl("label");
+        toggleLabel.setText("启用");
+        
+        const toggleCheckbox = toggleLabel.createEl("input", { type: "checkbox" });
+        toggleCheckbox.checked = script.enabled;
+        toggleCheckbox.style.marginLeft = "5px";
+        toggleCheckbox.addEventListener("change", () => {
+            if (toggleCheckbox.checked) {
+                this.scriptManager.enableScript(script.id);
+            } else {
+                this.scriptManager.disableScript(script.id);
+            }
+            new Notice(`脚本 ${script.name} 已${toggleCheckbox.checked ? "启用" : "禁用"}`);
+        });
+        
+        // 创建编辑器区域
+        const editorContainer = contentEl.createDiv();
+        editorContainer.style.flexGrow = "1";
+        editorContainer.style.border = "1px solid var(--background-modifier-border)";
+        editorContainer.style.borderRadius = "4px";
+        
+        // 创建简单的文本区域作为编辑器
+        const textarea = editorContainer.createEl("textarea");
+        textarea.value = script.source || "";
+        textarea.style.width = "100%";
+        textarea.style.height = "100%";
+        textarea.style.resize = "none";
+        textarea.style.fontFamily = "monospace";
+        textarea.style.padding = "10px";
+        textarea.style.boxSizing = "border-box";
+        
+        // 创建底部按钮栏
+        const buttonBar = contentEl.createDiv();
+        buttonBar.style.marginTop = "10px";
+        buttonBar.style.display = "flex";
+        buttonBar.style.justifyContent = "flex-end";
+        
+        // 添加取消按钮
+        const cancelButton = buttonBar.createEl("button", { text: "取消" });
+        cancelButton.style.marginRight = "10px";
+        cancelButton.addEventListener("click", () => {
+            modal.close();
+        });
+        
+        // 添加保存按钮
+        const saveButton = buttonBar.createEl("button", { text: "保存" });
+        saveButton.addClass("mod-cta");
+        saveButton.addEventListener("click", () => {
+            try {
+                // 更新脚本代码
+                this.scriptManager.updateScript(script.id, textarea.value);
+                new Notice(`脚本 ${script.name} 已保存`);
+                modal.close();
+            } catch (error) {
+                console.error('保存脚本失败:', error);
+                new Notice('保存脚本失败: ' + (error instanceof Error ? error.message : String(error)));
+            }
+        });
+        
+        // 打开模态框
+        modal.open();
+    }
+
+    // 添加updateRibbonIconVisibility方法
+    public updateRibbonIconVisibility(): void {
+        // 如果已有图标，先移除
+        if (this.ribbonIconEl) {
+            this.ribbonIconEl.remove();
+            this.ribbonIconEl = null;
+        }
+        
+        // 根据设置决定是否显示图标
+        if (this.settings.showRibbonIcon) {
+            // 添加边栏图标
+            this.ribbonIconEl = this.addRibbonIcon('cheekychimp', 'CheekyChimp', (evt: MouseEvent) => {
+                // 创建UserScript菜单
+                const menu = new Menu();
+                
+                // 显示菜单标题
+                menu.addItem((item) => {
+                    item.setTitle("UserScript Menu")
+                        .setDisabled(true);
+                });
+                
+                menu.addSeparator();
+                
+                // 获取所有脚本
+                const allScripts = this.scriptManager.getAllScripts();
+                
+                // 查找并添加脚本命令到菜单
+                this.addScriptCommandsToMenu(menu);
+                
+                // 如果没有找到脚本命令，显示脚本列表
+                if (!this.hasAddedScriptCommands) {
+                    // 添加所有脚本到菜单
+                    if (allScripts.length > 0) {
+                        // 先显示已启用的脚本
+                        const enabledScripts = allScripts.filter(s => s.enabled);
+                        enabledScripts.forEach(script => {
+                            menu.addItem((item) => {
+                                item.setTitle(script.name)
+                                    .setIcon("check")
+                                    .onClick(() => {
+                                        // 禁用脚本
+                                        this.scriptManager.disableScript(script.id);
+                                        new Notice(`已禁用脚本: ${script.name}`);
+                                    });
+                            });
+                        });
+                        
+                        // 然后显示未启用的脚本
+                        const disabledScripts = allScripts.filter(s => !s.enabled);
+                        if (disabledScripts.length > 0 && enabledScripts.length > 0) {
+                            menu.addSeparator();
+                        }
+                        
+                        disabledScripts.forEach(script => {
+                            menu.addItem((item) => {
+                                item.setTitle(script.name)
+                                    .setIcon("circle")
+                                    .onClick(() => {
+                                        // 启用脚本
+                                        this.scriptManager.enableScript(script.id);
+                                        new Notice(`已启用脚本: ${script.name}`);
+                                    });
+                            });
+                        });
+                    } else {
+                        // 如果没有脚本，显示提示
+                        menu.addItem((item) => {
+                            item.setTitle("没有安装脚本")
+                                .setDisabled(true);
+                        });
+                    }
+                }
+                
+                // 添加管理选项
+                menu.addSeparator();
+                
+                // 添加"新建脚本"选项
+                menu.addItem((item) => {
+                    item.setTitle("新建脚本")
+                        .setIcon("plus")
+                        .onClick(() => {
+                            // 直接创建一个新的空白脚本，不打开设置页面
+                            this.createNewScript();
+                        });
+                });
+                
+                // 添加"导入脚本"选项
+                menu.addItem((item) => {
+                    item.setTitle("导入脚本")
+                        .setIcon("upload")
+                        .onClick(() => {
+                            // 直接触发导入脚本功能
+                            this.importScriptFromFile();
+                        });
+                });
+                
+                // 添加"管理所有脚本"选项
+                menu.addItem((item) => {
+                    item.setTitle("管理所有脚本")
+                        .setIcon("settings")
+                        .onClick(() => {
+                            this.openSettings();
+                        });
+                });
+                
+                // 在鼠标点击位置显示菜单
+                menu.showAtPosition({ x: evt.x, y: evt.y });
+            });
         }
     }
 }
