@@ -21,3 +21,5 @@ dist/
 # 忽略临时文件
 .tmp/
 temp/ 
+/Reference
+/Reference
