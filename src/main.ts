@@ -14,6 +14,7 @@ export default class CheekyChimpPlugin extends Plugin {
     settingTab: CheekyChimpSettingTab;
     private editScriptHandler: EventListener;
     private createScriptHandler: EventListener;
+    private ribbonIconEl: HTMLElement | null = null;
 
     async onload() {
         console.log('Loading CheekyChimp plugin');
@@ -41,24 +42,12 @@ export default class CheekyChimpPlugin extends Plugin {
 
         // 添加油猴图标到ribbon
         // 使用原始油猴图标
-        addIcon('cheekychimp', `<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" d="M 108.11719 0 L 0 108.11914 L 0 403.88086 L 108.11719 512 L 403.88281 512 L 512 403.88086 L 512 108.11914 L 403.88281 0 L 108.11719 0 z M 196.56055 128 L 315.43945 128 C 324.4555 128 332 135.5445 332 144.56055 L 332 196.56055 L 384 196.56055 C 393.0161 196.56055 400.56055 204.10499 400.56055 213.12109 L 400.56055 298.87891 C 400.56055 307.89501 393.0161 315.43945 384 315.43945 L 332 315.43945 L 332 367.43945 C 332 376.4555 324.4555 384 315.43945 384 L 196.56055 384 C 187.5445 384 180 376.4555 180 367.43945 L 180 315.43945 L 128 315.43945 C 118.98389 315.43945 111.43945 307.89501 111.43945 298.87891 L 111.43945 213.12109 C 111.43945 204.10499 118.98389 196.56055 128 196.56055 L 180 196.56055 L 180 144.56055 C 180 135.5445 187.5445 128 196.56055 128 z"/>
+        addIcon('cheekychimp', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320">
+            <image href="https://img.picui.cn/free/2025/04/10/67f7319b00e3f.png" width="100%" height="100%" />
         </svg>`);
 
-        // 添加ribbon图标
-        const ribbonIconEl = this.addRibbonIcon('cheekychimp', 'CheekyChimp', (evt: MouseEvent) => {
-            // 显示活动脚本状态
-            const activeScripts = this.scriptManager.getAllScripts().filter(s => s.enabled);
-            if (activeScripts.length > 0) {
-                const scriptList = activeScripts.map(s => `- ${s.name}`).join('\n');
-                new Notice(`${i18n.t('active_scripts')} (${activeScripts.length}):\n${scriptList}`);
-            } else {
-                new Notice(i18n.t('no_active_scripts'));
-            }
-            
-            // 打开设置页面
-            this.openSettings();
-        });
+        // 添加ribbon图标（现在通过updateRibbonIconVisibility管理）
+        this.updateRibbonIconVisibility();
 
         // 监听脚本编辑和创建事件
         this.editScriptHandler = (e: Event) => {
@@ -87,6 +76,12 @@ export default class CheekyChimpPlugin extends Plugin {
         // 移除自定义事件监听器
         document.removeEventListener('cheekychimp-edit-script', this.editScriptHandler);
         document.removeEventListener('cheekychimp-create-script', this.createScriptHandler);
+        
+        // 移除边栏图标
+        if (this.ribbonIconEl) {
+            this.ribbonIconEl.remove();
+            this.ribbonIconEl = null;
+        }
     }
 
     async loadSettings() {
@@ -263,11 +258,11 @@ export default class CheekyChimpPlugin extends Plugin {
             return;
         }
         webview.setAttribute('data-tampermonkey-processed', 'true');
-        
+            
         console.log('Tampermonkey: Webview detected', webview.tagName);
-        
+            
         // 如果是 iframe，可以尝试使用 load 事件
-        if (webview instanceof HTMLIFrameElement) {
+            if (webview instanceof HTMLIFrameElement) {
             console.log('CheekyChimp: 处理iframe元素');
             
             // 获取当前URL
@@ -280,7 +275,7 @@ export default class CheekyChimpPlugin extends Plugin {
                 console.warn('CheekyChimp: 无法读取iframe的src属性', e);
                 currentUrl = webview.getAttribute('src') || '';
             }
-            
+                
             // 为iframe添加load事件监听
             webview.addEventListener('load', () => {
                 try {
@@ -295,17 +290,17 @@ export default class CheekyChimpPlugin extends Plugin {
                     if (url) {
                         console.log('CheekyChimp: iframe加载完成，注入脚本到', url);
                         this.injectScriptsForUrl(webview, url);
-                    }
+                        }
                 } catch (e) {
                     console.error('CheekyChimp: 处理iframe load事件出错', e);
-                }
-            });
+                    }
+                });
             
             // 立即处理当前URL
             if (currentUrl) {
                 console.log('CheekyChimp: 立即注入脚本到iframe:', currentUrl);
                 this.injectScriptsForUrl(webview, currentUrl);
-            }
+                }
         } 
         // 处理其他类型的 webview
         else if (webview.tagName === 'WEBVIEW' || webview.tagName === 'IFRAME') {
@@ -338,8 +333,8 @@ export default class CheekyChimpPlugin extends Plugin {
                         }
                     } catch(e) {
                         console.error('CheekyChimp: 处理webview load事件出错', e);
-                    }
-                });
+                        }
+                    });
             } catch(e) {
                 console.warn('CheekyChimp: 添加webview事件监听器失败', e);
             }
@@ -373,7 +368,7 @@ export default class CheekyChimpPlugin extends Plugin {
     private injectScriptsForUrl(webview: HTMLElement, url: string) {
         // Find matching scripts
         const scripts = this.scriptManager.findScriptsForUrl(url);
-        
+            
         if (scripts.length > 0) {
             console.log(`CheekyChimp: Found ${scripts.length} scripts for ${url}`);
             // Inject scripts
@@ -419,5 +414,31 @@ export default class CheekyChimpPlugin extends Plugin {
             }
         `;
         document.head.appendChild(style);
+    }
+
+    public updateRibbonIconVisibility() {
+        // 如果已有图标，先移除
+        if (this.ribbonIconEl) {
+            this.ribbonIconEl.remove();
+            this.ribbonIconEl = null;
+        }
+        
+        // 根据设置决定是否显示边栏图标
+        if (this.settings.showRibbonIcon) {
+            // 添加ribbon图标
+            this.ribbonIconEl = this.addRibbonIcon('cheekychimp', 'CheekyChimp', (evt: MouseEvent) => {
+                // 显示活动脚本状态
+                const activeScripts = this.scriptManager.getAllScripts().filter(s => s.enabled);
+                if (activeScripts.length > 0) {
+                    const scriptList = activeScripts.map(s => `- ${s.name}`).join('\n');
+                    new Notice(`${i18n.t('active_scripts')} (${activeScripts.length}):\n${scriptList}`);
+                } else {
+                    new Notice(i18n.t('no_active_scripts'));
+                }
+                
+                // 打开设置页面
+                this.openSettings();
+            });
+        }
     }
 }

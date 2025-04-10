@@ -7,13 +7,15 @@ export interface CheekyChimpSettings {
     automaticallyCheckForUpdates: boolean;
     updateInterval: number;
     debug: boolean;
+    showRibbonIcon: boolean;
 }
 
 export const DEFAULT_SETTINGS: CheekyChimpSettings = {
     scripts: [],
     automaticallyCheckForUpdates: true,
     updateInterval: 24, // hours
-    debug: false
+    debug: false,
+    showRibbonIcon: true
 };
 
 /**
@@ -70,6 +72,18 @@ export class CheekyChimpSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.debug = value;
                     await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('显示边栏图标')
+            .setDesc('在左侧边栏显示CheekyChimp图标')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showRibbonIcon)
+                .onChange(async (value) => {
+                    this.plugin.settings.showRibbonIcon = value;
+                    await this.plugin.saveSettings();
+                    // 更新边栏图标的显示状态
+                    this.plugin.updateRibbonIconVisibility();
                 }));
 
         // Script Management
